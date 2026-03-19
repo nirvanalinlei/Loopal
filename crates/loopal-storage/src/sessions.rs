@@ -4,7 +4,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use loopal_types::error::StorageError;
+use loopal_error::StorageError;
 
 /// Session metadata persisted to disk.
 #[derive(Debug, Clone, Serialize, Deserialize)]

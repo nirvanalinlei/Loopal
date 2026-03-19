@@ -1,7 +1,7 @@
 //! Edge-case tests for max_tokens auto-continuation.
 
-use loopal_types::event::AgentEventPayload;
-use loopal_types::provider::{StopReason, StreamChunk};
+use loopal_protocol::AgentEventPayload;
+use loopal_provider_api::{StopReason, StreamChunk};
 
 use super::mock_provider::make_multi_runner;
 

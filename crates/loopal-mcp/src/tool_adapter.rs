@@ -1,9 +1,8 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use loopal_types::error::LoopalError;
-use loopal_types::permission::PermissionLevel;
-use loopal_types::tool::{Tool, ToolContext, ToolDefinition, ToolResult};
+use loopal_error::LoopalError;
+use loopal_tool_api::{PermissionLevel, Tool, ToolContext, ToolDefinition, ToolResult};
 use serde_json::Value;
 use tokio::sync::RwLock;
 

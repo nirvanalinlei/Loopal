@@ -2,10 +2,9 @@ use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 use loopal_hooks::run_hook;
 use loopal_kernel::Kernel;
-use loopal_types::error::{LoopalError, Result};
-use loopal_types::hook::HookEvent;
-use loopal_types::tool::{ToolContext, ToolResult};
-use loopal_types::truncate::{needs_truncation, truncate_output};
+use loopal_error::{LoopalError, Result};
+use loopal_config::HookEvent;
+use loopal_tool_api::{ToolContext, ToolResult, needs_truncation, truncate_output};
 use serde_json::Value;
 use tracing::{debug, info, warn};
 
@@ -26,7 +25,7 @@ pub async fn execute_tool(
 ) -> Result<ToolResult> {
     let tool = kernel
         .get_tool(name)
-        .ok_or_else(|| LoopalError::Tool(loopal_types::error::ToolError::NotFound(name.to_string())))?;
+        .ok_or_else(|| LoopalError::Tool(loopal_error::ToolError::NotFound(name.to_string())))?;
 
     // Run pre-hooks
     let pre_hooks = kernel.get_hooks(HookEvent::PreToolUse, Some(name));

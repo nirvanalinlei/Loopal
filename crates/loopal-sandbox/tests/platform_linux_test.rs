@@ -3,7 +3,7 @@ mod linux_tests {
     use std::path::PathBuf;
 
     use loopal_sandbox::platform::linux::build_bwrap_args;
-    use loopal_types::sandbox::{
+    use loopal_config::{
         NetworkPolicy, ResolvedPolicy, SandboxPolicy,
     };
 

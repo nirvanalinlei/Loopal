@@ -1,6 +1,6 @@
 //! String and JSON truncation utilities for the session layer.
 
-use loopal_types::truncate::truncate_output;
+use loopal_tool_api::truncate_output;
 
 const RESULT_STORAGE_MAX_LINES: usize = 200;
 const RESULT_STORAGE_MAX_BYTES: usize = 10_000;

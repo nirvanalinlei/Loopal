@@ -13,13 +13,13 @@ use loopal_runtime::agent_loop::AgentLoopRunner;
 use loopal_runtime::frontend::AutoDenyHandler;
 use loopal_runtime::{AgentLoopParams, AgentMode, SessionManager, UnifiedFrontend};
 use loopal_storage::Session;
-use loopal_types::config::Settings;
-use loopal_types::control::ControlCommand;
-use loopal_types::envelope::Envelope;
-use loopal_types::error::{LoopalError, TerminateReason};
-use loopal_types::permission::{PermissionLevel, PermissionMode};
-use loopal_types::provider::{ChatParams, ChatStream, Provider, StopReason, StreamChunk};
-use loopal_types::tool::{Tool, ToolContext, ToolResult, COMPLETION_PREFIX};
+use loopal_config::Settings;
+use loopal_protocol::ControlCommand;
+use loopal_protocol::Envelope;
+use loopal_error::{LoopalError, TerminateReason};
+use loopal_tool_api::{PermissionLevel, PermissionMode};
+use loopal_provider_api::{ChatParams, ChatStream, Provider, StopReason, StreamChunk};
+use loopal_tool_api::{Tool, ToolContext, ToolResult, COMPLETION_PREFIX};
 use tokio::sync::mpsc;
 
 // --- Multi-call mock provider ---
@@ -70,7 +70,7 @@ impl Tool for FakeCompletionTool {
 fn make_multi_runner(
     calls: Vec<Vec<Result<StreamChunk, LoopalError>>>,
     register_completion: bool,
-) -> (AgentLoopRunner, mpsc::Receiver<loopal_types::event::AgentEvent>) {
+) -> (AgentLoopRunner, mpsc::Receiver<loopal_protocol::AgentEvent>) {
     let (event_tx, event_rx) = mpsc::channel(64);
     let (_mbox_tx, mailbox_rx) = mpsc::channel::<Envelope>(16);
     let (_ctrl_tx, control_rx) = mpsc::channel::<ControlCommand>(16);
@@ -88,7 +88,7 @@ fn make_multi_runner(
     let tmp = std::env::temp_dir().join(format!("la_multi_{}", std::process::id()));
     let params = AgentLoopParams {
         kernel: Arc::new(kernel), session,
-        messages: vec![loopal_types::message::Message::user("go")],
+        messages: vec![loopal_message::Message::user("go")],
         model: "claude-sonnet-4-20250514".into(), system_prompt: "t".into(),
         mode: AgentMode::Act, permission_mode: PermissionMode::Bypass,
         max_turns: 10, frontend, session_manager: SessionManager::with_base_dir(tmp),
@@ -213,7 +213,7 @@ async fn test_stream_error_after_tool_preserves_last_text() {
         // Second LLM call: stream error (simulates 502/connection reset)
         vec![
             Err(LoopalError::Provider(
-                loopal_types::error::ProviderError::StreamEnded,
+                loopal_error::ProviderError::StreamEnded,
             )),
         ],
     ];

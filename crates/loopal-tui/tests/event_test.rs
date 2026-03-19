@@ -1,5 +1,5 @@
 use loopal_tui::event::{AppEvent, EventHandler};
-use loopal_types::event::{AgentEvent, AgentEventPayload};
+use loopal_protocol::{AgentEvent, AgentEventPayload};
 use tokio::sync::mpsc;
 
 #[tokio::test]

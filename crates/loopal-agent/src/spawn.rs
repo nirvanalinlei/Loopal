@@ -9,9 +9,9 @@ use loopal_context::ContextPipeline;
 use loopal_context::middleware::{ContextGuard, SmartCompact, TurnLimit};
 use loopal_runtime::{AgentLoopParams, AgentMode, SessionManager, UnifiedFrontend, agent_loop};
 use loopal_runtime::frontend::AutoDenyHandler;
-use loopal_types::control::ControlCommand;
-use loopal_types::envelope::Envelope;
-use loopal_types::message::Message;
+use loopal_protocol::ControlCommand;
+use loopal_protocol::Envelope;
+use loopal_message::Message;
 
 use crate::config::AgentConfig;
 use crate::registry::AgentHandle;

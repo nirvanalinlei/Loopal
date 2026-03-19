@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use loopal_types::tool::{Tool, ToolDefinition};
+use loopal_tool_api::{Tool, ToolDefinition};
 
 /// Registry that holds all available tools by name.
 pub struct ToolRegistry {

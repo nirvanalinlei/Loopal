@@ -1,8 +1,8 @@
 //! Async tests for SessionController interaction methods (channels).
 
 use loopal_session::SessionController;
-use loopal_types::control::ControlCommand;
-use loopal_types::event::{AgentEvent, AgentEventPayload};
+use loopal_protocol::ControlCommand;
+use loopal_protocol::{AgentEvent, AgentEventPayload};
 use tokio::sync::mpsc;
 
 fn make_controller() -> (
@@ -70,12 +70,12 @@ async fn test_enqueue_message_queues_when_busy() {
 #[tokio::test]
 async fn test_switch_mode() {
     let (ctrl, mut control_rx, _) = make_controller();
-    ctrl.switch_mode(loopal_types::command::AgentMode::Plan).await;
+    ctrl.switch_mode(loopal_protocol::AgentMode::Plan).await;
 
     assert_eq!(ctrl.lock().mode, "plan");
     match control_rx.recv().await {
         Some(ControlCommand::ModeSwitch(m)) => {
-            assert!(matches!(m, loopal_types::command::AgentMode::Plan));
+            assert!(matches!(m, loopal_protocol::AgentMode::Plan));
         }
         other => panic!("expected ModeSwitch, got {:?}", other),
     }

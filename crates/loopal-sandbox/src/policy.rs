@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use loopal_types::sandbox::{
+use loopal_config::{
     ResolvedPolicy, SandboxConfig, SandboxPolicy,
 };
 

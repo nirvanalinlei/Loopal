@@ -1,7 +1,7 @@
 use loopal_provider::AnthropicProvider;
-use loopal_types::message::{ContentBlock, ImageSource, Message, MessageRole};
-use loopal_types::provider::ChatParams;
-use loopal_types::tool::ToolDefinition;
+use loopal_message::{ContentBlock, ImageSource, Message, MessageRole};
+use loopal_provider_api::ChatParams;
+use loopal_tool_api::ToolDefinition;
 use serde_json::json;
 
 fn make_provider() -> AnthropicProvider {

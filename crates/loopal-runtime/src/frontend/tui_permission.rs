@@ -2,8 +2,8 @@ use async_trait::async_trait;
 use tokio::sync::{Mutex, mpsc};
 use tracing::{info, warn};
 
-use loopal_types::event::{AgentEvent, AgentEventPayload};
-use loopal_types::permission::PermissionDecision;
+use loopal_protocol::{AgentEvent, AgentEventPayload};
+use loopal_tool_api::PermissionDecision;
 
 use super::permission_handler::PermissionHandler;
 

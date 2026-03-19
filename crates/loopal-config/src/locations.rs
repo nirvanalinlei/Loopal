@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use loopal_types::error::ConfigError;
+use loopal_error::ConfigError;
 
 const GLOBAL_DIR_NAME: &str = ".loopal";
 const PROJECT_DIR_NAME: &str = ".loopal";

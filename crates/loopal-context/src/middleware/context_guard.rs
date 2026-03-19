@@ -1,6 +1,6 @@
 use async_trait::async_trait;
-use loopal_types::error::LoopalError;
-use loopal_types::middleware::{Middleware, MiddlewareContext};
+use loopal_error::LoopalError;
+use loopal_provider_api::{Middleware, MiddlewareContext};
 
 use crate::compaction::{compact_messages, find_largest_tool_result, truncate_block_content};
 use crate::token_counter::estimate_messages_tokens;

@@ -1,8 +1,8 @@
 use std::path::Path;
 
 use loopal_storage::{MessageStore, Session, SessionStore};
-use loopal_types::error::Result;
-use loopal_types::message::Message;
+use loopal_error::Result;
+use loopal_message::Message;
 use tracing::info;
 
 /// Manages session creation, resumption, and message persistence.

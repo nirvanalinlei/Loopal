@@ -1,7 +1,7 @@
 use async_trait::async_trait;
-use loopal_types::error::LoopalError;
-use loopal_types::permission::PermissionLevel;
-use loopal_types::tool::{Tool, ToolContext, ToolResult, COMPLETION_PREFIX};
+use loopal_error::LoopalError;
+use loopal_tool_api::PermissionLevel;
+use loopal_tool_api::{Tool, ToolContext, ToolResult, COMPLETION_PREFIX};
 
 /// Tool for agents to signal task completion.
 ///

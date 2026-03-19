@@ -1,8 +1,8 @@
 use loopal_kernel::Kernel;
 use loopal_runtime::tool_pipeline::execute_tool;
-use loopal_types::config::Settings;
-use loopal_types::hook::{HookConfig, HookEvent};
-use loopal_types::tool::ToolContext;
+use loopal_config::Settings;
+use loopal_config::{HookConfig, HookEvent};
+use loopal_tool_api::ToolContext;
 
 fn make_kernel_with_hooks(hooks: Vec<HookConfig>) -> Kernel {
     let settings = Settings { hooks, ..Default::default() };

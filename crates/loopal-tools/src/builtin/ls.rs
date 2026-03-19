@@ -1,7 +1,6 @@
 use async_trait::async_trait;
-use loopal_types::error::LoopalError;
-use loopal_types::permission::PermissionLevel;
-use loopal_types::tool::{Tool, ToolContext, ToolResult};
+use loopal_error::LoopalError;
+use loopal_tool_api::{PermissionLevel, Tool, ToolContext, ToolResult};
 use serde_json::{json, Value};
 use std::path::PathBuf;
 
@@ -44,13 +43,13 @@ impl Tool for LsTool {
 
         let mut entries = Vec::new();
         let mut read_dir = tokio::fs::read_dir(&dir_path).await.map_err(|e| {
-            LoopalError::Tool(loopal_types::error::ToolError::ExecutionFailed(
+            LoopalError::Tool(loopal_error::ToolError::ExecutionFailed(
                 format!("Failed to read directory {}: {}", dir_path.display(), e),
             ))
         })?;
 
         while let Some(entry) = read_dir.next_entry().await.map_err(|e| {
-            LoopalError::Tool(loopal_types::error::ToolError::ExecutionFailed(
+            LoopalError::Tool(loopal_error::ToolError::ExecutionFailed(
                 format!("Failed to read entry: {}", e),
             ))
         })? {

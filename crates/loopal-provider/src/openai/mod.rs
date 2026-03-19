@@ -2,8 +2,8 @@ mod message_builder;
 mod stream;
 
 use async_trait::async_trait;
-use loopal_types::error::{LoopalError, ProviderError};
-use loopal_types::provider::{ChatParams, ChatStream, Provider};
+use loopal_error::{LoopalError, ProviderError};
+use loopal_provider_api::{ChatParams, ChatStream, Provider};
 use reqwest::Client;
 use serde_json::json;
 use std::collections::VecDeque;

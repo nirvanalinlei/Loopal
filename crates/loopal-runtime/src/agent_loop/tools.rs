@@ -1,13 +1,13 @@
 use std::sync::Arc;
 use std::time::Instant;
 
-use loopal_types::error::Result;
-use loopal_types::event::AgentEventPayload;
-use loopal_types::message::{ContentBlock, Message, MessageRole};
-use loopal_types::permission::PermissionDecision;
+use loopal_error::Result;
+use loopal_protocol::AgentEventPayload;
+use loopal_message::{ContentBlock, Message, MessageRole};
+use loopal_tool_api::PermissionDecision;
 use tracing::{Instrument, error, info};
 
-use loopal_types::tool::COMPLETION_PREFIX;
+use loopal_tool_api::COMPLETION_PREFIX;
 
 use crate::tool_pipeline::execute_tool;
 

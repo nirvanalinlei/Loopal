@@ -1,5 +1,5 @@
 use loopal_mcp::McpManager;
-use loopal_types::error::McpError;
+use loopal_error::McpError;
 
 #[test]
 fn test_new_creates_empty_manager() {

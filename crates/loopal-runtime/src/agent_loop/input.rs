@@ -1,10 +1,10 @@
 use loopal_provider::get_model_info;
-use loopal_types::agent_input::AgentInput;
-use loopal_types::control::ControlCommand;
-use loopal_types::envelope::{Envelope, MessageSource};
-use loopal_types::error::Result;
-use loopal_types::event::AgentEventPayload;
-use loopal_types::message::Message;
+use crate::agent_input::AgentInput;
+use loopal_protocol::ControlCommand;
+use loopal_protocol::{Envelope, MessageSource};
+use loopal_error::Result;
+use loopal_protocol::AgentEventPayload;
+use loopal_message::Message;
 use tracing::{error, info};
 
 use crate::mode::AgentMode;
@@ -43,8 +43,8 @@ impl AgentLoopRunner {
             ControlCommand::ModeSwitch(new_mode) => {
                 self.params.mode = AgentMode::from(new_mode);
                 let mode_str = match new_mode {
-                    loopal_types::command::AgentMode::Plan => "plan",
-                    loopal_types::command::AgentMode::Act => "act",
+                    loopal_protocol::AgentMode::Plan => "plan",
+                    loopal_protocol::AgentMode::Act => "act",
                 };
                 self.emit(AgentEventPayload::ModeChanged { mode: mode_str.to_string() }).await?;
                 Ok(Some(WaitResult::Continue))

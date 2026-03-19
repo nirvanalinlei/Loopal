@@ -1,13 +1,13 @@
 use std::path::Path;
 
-use loopal_types::config::Settings;
-use loopal_types::error::{ConfigError, LoopalError};
+use crate::settings::Settings;
+use loopal_error::{ConfigError, LoopalError};
 
 use crate::locations;
 
 /// Deep-merge two JSON values. Objects are merged recursively; all other types
 /// (including arrays) are replaced by the overlay value.
-fn deep_merge(base: &mut serde_json::Value, overlay: serde_json::Value) {
+pub fn deep_merge(base: &mut serde_json::Value, overlay: serde_json::Value) {
     match (base, overlay) {
         (serde_json::Value::Object(base_map), serde_json::Value::Object(overlay_map)) => {
             for (key, value) in overlay_map {
@@ -21,7 +21,7 @@ fn deep_merge(base: &mut serde_json::Value, overlay: serde_json::Value) {
 }
 
 /// Load a JSON file and return its Value, or Null if the file does not exist.
-fn load_json_file(path: &Path) -> Result<serde_json::Value, LoopalError> {
+pub fn load_json_file(path: &Path) -> Result<serde_json::Value, LoopalError> {
     match std::fs::read_to_string(path) {
         Ok(contents) => {
             let value: serde_json::Value = serde_json::from_str(&contents)
@@ -34,7 +34,7 @@ fn load_json_file(path: &Path) -> Result<serde_json::Value, LoopalError> {
 }
 
 /// Apply environment variable overrides to a JSON value.
-fn apply_env_overrides(value: &mut serde_json::Value) {
+pub fn apply_env_overrides(value: &mut serde_json::Value) {
     // Ensure we have an object to work with
     if !value.is_object() {
         *value = serde_json::json!({});
@@ -115,89 +115,4 @@ pub fn load_instructions(cwd: &Path) -> Result<String, LoopalError> {
     }
 
     Ok(parts.join("\n\n"))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_deep_merge_replaces_non_object() {
-        // L17: base is not Object, overlay replaces it entirely
-        let mut base = serde_json::json!("a string");
-        let overlay = serde_json::json!("replaced");
-        deep_merge(&mut base, overlay);
-        assert_eq!(base, serde_json::json!("replaced"));
-    }
-
-    #[test]
-    fn test_deep_merge_objects_recursive() {
-        let mut base = serde_json::json!({"a": {"b": 1, "c": 2}});
-        let overlay = serde_json::json!({"a": {"b": 10}});
-        deep_merge(&mut base, overlay);
-        assert_eq!(base["a"]["b"], 10);
-        assert_eq!(base["a"]["c"], 2);
-    }
-
-    #[test]
-    fn test_deep_merge_object_replaces_non_object_at_key() {
-        let mut base = serde_json::json!({"key": "string_value"});
-        let overlay = serde_json::json!({"key": {"nested": true}});
-        deep_merge(&mut base, overlay);
-        assert_eq!(base["key"]["nested"], true);
-    }
-
-    #[test]
-    fn test_load_json_file_not_found_returns_null() {
-        // L31: NotFound returns Ok(Null)
-        let path = std::path::Path::new("/tmp/loopal_test_nonexistent_file_xyz_12345.json");
-        let result = load_json_file(path).unwrap();
-        assert!(result.is_null());
-    }
-
-    #[test]
-    fn test_load_json_file_valid_json() {
-        let tmp = tempfile::TempDir::new().unwrap();
-        let file = tmp.path().join("test.json");
-        std::fs::write(&file, r#"{"key": "value"}"#).unwrap();
-
-        let result = load_json_file(&file).unwrap();
-        assert_eq!(result["key"], "value");
-    }
-
-    #[test]
-    fn test_load_json_file_invalid_json() {
-        let tmp = tempfile::TempDir::new().unwrap();
-        let file = tmp.path().join("bad.json");
-        std::fs::write(&file, "not valid json!").unwrap();
-
-        let result = load_json_file(&file);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_load_json_file_io_error() {
-        // L32: IO error that is NOT NotFound
-        // Reading a directory path will cause an IO error
-        let tmp = tempfile::TempDir::new().unwrap();
-        let result = load_json_file(tmp.path());
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_apply_env_overrides_on_non_object() {
-        // L39-40: value is not an object, should be replaced with {}
-        let mut value = serde_json::json!("a string");
-        apply_env_overrides(&mut value);
-        assert!(value.is_object());
-    }
-
-    #[test]
-    fn test_apply_env_overrides_on_object() {
-        // L39: value is already an object
-        let mut value = serde_json::json!({"existing": true});
-        apply_env_overrides(&mut value);
-        assert!(value.is_object());
-        assert_eq!(value["existing"], true);
-    }
 }

@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
-use loopal_types::config::McpServerConfig;
-use loopal_types::error::McpError;
-use loopal_types::tool::ToolDefinition;
+use loopal_config::McpServerConfig;
+use loopal_error::McpError;
+use loopal_tool_api::ToolDefinition;
 use serde_json::Value;
 use tracing::{debug, info, warn};
 

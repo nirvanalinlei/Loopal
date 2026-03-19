@@ -7,7 +7,7 @@ use ratatui::prelude::*;
 use ratatui::widgets::Paragraph;
 
 use loopal_session::state::AgentViewState;
-use loopal_types::agent_state::AgentStatus;
+use loopal_protocol::AgentStatus;
 
 /// Panel height: 1 if any agent is active, 0 otherwise.
 pub fn panel_height(agents: &IndexMap<String, AgentViewState>) -> u16 {

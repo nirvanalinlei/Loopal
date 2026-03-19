@@ -1,5 +1,5 @@
-use loopal_types::error::TerminateReason;
-use loopal_types::provider::{StopReason, StreamChunk};
+use loopal_error::TerminateReason;
+use loopal_provider_api::{StopReason, StreamChunk};
 
 use super::mock_provider::make_runner_with_mock_provider;
 
@@ -66,8 +66,8 @@ async fn test_turn_tool_then_text_non_interactive() {
 #[tokio::test]
 async fn test_turn_stream_error_no_prior_output() {
     let chunks = vec![
-        Err(loopal_types::error::LoopalError::Provider(
-            loopal_types::error::ProviderError::StreamEnded,
+        Err(loopal_error::LoopalError::Provider(
+            loopal_error::ProviderError::StreamEnded,
         )),
     ];
     let (mut runner, mut event_rx, _mbox_tx, _ctrl_tx) = make_runner_with_mock_provider(chunks);

@@ -4,10 +4,9 @@
 //! for Bash tools, OS-level sandboxed execution.
 
 use async_trait::async_trait;
-use loopal_types::error::LoopalError;
-use loopal_types::permission::PermissionLevel;
-use loopal_types::sandbox::ResolvedPolicy;
-use loopal_types::tool::{Tool, ToolContext, ToolResult};
+use loopal_config::{CommandDecision, PathDecision, ResolvedPolicy, SandboxPolicy};
+use loopal_error::LoopalError;
+use loopal_tool_api::{PermissionLevel, Tool, ToolContext, ToolResult};
 use serde_json::Value;
 
 use crate::bash_executor::execute_sandboxed_bash;
@@ -78,11 +77,11 @@ fn precheck_bash(policy: &ResolvedPolicy, input: &Value) -> Option<String> {
     // ReadOnly sandbox: block all Bash — shell commands can't be statically
     // guaranteed to be read-only, so we reject at precheck rather than relying
     // solely on OS sandbox at execution time.
-    if policy.policy == loopal_types::sandbox::SandboxPolicy::ReadOnly {
+    if policy.policy == SandboxPolicy::ReadOnly {
         return Some("read-only sandbox: Bash commands are blocked".into());
     }
     let cmd = input["command"].as_str().unwrap_or_default();
-    if let loopal_types::sandbox::CommandDecision::Deny(reason) = check_command(cmd) {
+    if let CommandDecision::Deny(reason) = check_command(cmd) {
         return Some(reason);
     }
     None
@@ -91,7 +90,7 @@ fn precheck_bash(policy: &ResolvedPolicy, input: &Value) -> Option<String> {
 fn precheck_write(policy: &ResolvedPolicy, input: &Value) -> Option<String> {
     let path_str = input["file_path"].as_str().unwrap_or_default();
     let path = std::path::Path::new(path_str);
-    if let loopal_types::sandbox::PathDecision::DenyWrite(reason) = check_path(policy, path, true) {
+    if let PathDecision::DenyWrite(reason) = check_path(policy, path, true) {
         return Some(reason);
     }
     None
@@ -103,7 +102,7 @@ fn precheck_read(policy: &ResolvedPolicy, input: &Value) -> Option<String> {
         .or_else(|| input["path"].as_str());
     if let Some(p) = path_str {
         let path = std::path::Path::new(p);
-        if let loopal_types::sandbox::PathDecision::DenyRead(reason) =
+        if let PathDecision::DenyRead(reason) =
             check_path(policy, path, false)
         {
             return Some(reason);
@@ -127,7 +126,7 @@ fn precheck_generic(policy: &ResolvedPolicy, input: &Value) -> Option<String> {
     for key in ["file_path", "path", "destination", "output_path", "target"] {
         if let Some(path_str) = input[key].as_str() {
             let path = std::path::Path::new(path_str);
-            if let loopal_types::sandbox::PathDecision::DenyWrite(reason) =
+            if let PathDecision::DenyWrite(reason) =
                 check_path(policy, path, true)
             {
                 return Some(reason);
@@ -136,7 +135,7 @@ fn precheck_generic(policy: &ResolvedPolicy, input: &Value) -> Option<String> {
     }
     for key in ["command", "cmd", "shell", "script", "exec"] {
         if let Some(cmd) = input[key].as_str()
-            && let loopal_types::sandbox::CommandDecision::Deny(reason) = check_command(cmd)
+            && let CommandDecision::Deny(reason) = check_command(cmd)
         {
             return Some(reason);
         }

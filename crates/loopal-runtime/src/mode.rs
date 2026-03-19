@@ -1,4 +1,4 @@
-use loopal_types::command::AgentMode as TypesAgentMode;
+use loopal_protocol::AgentMode as TypesAgentMode;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AgentMode {

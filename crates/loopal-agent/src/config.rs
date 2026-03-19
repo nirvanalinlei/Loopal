@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::path::Path;
 
-use loopal_types::permission::PermissionMode;
+use loopal_tool_api::PermissionMode;
 
 /// Configuration for a sub-agent type, loaded from `.loopal/agents/*.md`.
 #[derive(Debug, Clone)]

@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 use tokio::sync::mpsc;
 
-use loopal_types::error::{LoopalError, Result};
-use loopal_types::event::{AgentEvent, AgentEventPayload};
-use loopal_types::frontend::EventEmitter;
+use loopal_error::{LoopalError, Result};
+use loopal_protocol::{AgentEvent, AgentEventPayload};
+use crate::frontend::traits::EventEmitter;
 
 /// Cloneable event emitter backed by an mpsc sender.
 ///

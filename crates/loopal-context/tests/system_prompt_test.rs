@@ -1,5 +1,5 @@
 use loopal_context::build_system_prompt;
-use loopal_types::tool::ToolDefinition;
+use loopal_tool_api::ToolDefinition;
 
 #[test]
 fn test_build_basic() {

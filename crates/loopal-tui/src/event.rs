@@ -1,5 +1,5 @@
 use crossterm::event::{self, Event as CrosstermEvent, KeyEvent, MouseEvent};
-use loopal_types::event::AgentEvent;
+use loopal_protocol::AgentEvent;
 use tokio::sync::mpsc;
 
 /// Unified event type for the TUI main loop

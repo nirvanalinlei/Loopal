@@ -1,7 +1,6 @@
 use async_trait::async_trait;
-use loopal_types::error::LoopalError;
-use loopal_types::permission::PermissionLevel;
-use loopal_types::tool::{Tool, ToolContext, ToolResult};
+use loopal_error::LoopalError;
+use loopal_tool_api::{PermissionLevel, Tool, ToolContext, ToolResult};
 use serde_json::{json, Value};
 use std::path::PathBuf;
 
@@ -53,21 +52,21 @@ impl Tool for EditTool {
         let file_path = input["file_path"]
             .as_str()
             .ok_or_else(|| {
-                LoopalError::Tool(loopal_types::error::ToolError::InvalidInput(
+                LoopalError::Tool(loopal_error::ToolError::InvalidInput(
                     "file_path is required".into(),
                 ))
             })?;
         let old_string = input["old_string"]
             .as_str()
             .ok_or_else(|| {
-                LoopalError::Tool(loopal_types::error::ToolError::InvalidInput(
+                LoopalError::Tool(loopal_error::ToolError::InvalidInput(
                     "old_string is required".into(),
                 ))
             })?;
         let new_string = input["new_string"]
             .as_str()
             .ok_or_else(|| {
-                LoopalError::Tool(loopal_types::error::ToolError::InvalidInput(
+                LoopalError::Tool(loopal_error::ToolError::InvalidInput(
                     "new_string is required".into(),
                 ))
             })?;
@@ -83,7 +82,7 @@ impl Tool for EditTool {
             }
 
         let content = tokio::fs::read_to_string(&path).await.map_err(|e| {
-            LoopalError::Tool(loopal_types::error::ToolError::ExecutionFailed(
+            LoopalError::Tool(loopal_error::ToolError::ExecutionFailed(
                 format!("Failed to read {}: {}", path.display(), e),
             ))
         })?;
@@ -100,7 +99,7 @@ impl Tool for EditTool {
         match search_replace(&content, old_string, new_string, replace_all) {
             SearchReplaceResult::Ok(new_content) => {
                 tokio::fs::write(&path, &new_content).await.map_err(|e| {
-                    LoopalError::Tool(loopal_types::error::ToolError::ExecutionFailed(
+                    LoopalError::Tool(loopal_error::ToolError::ExecutionFailed(
                         format!("Failed to write {}: {}", path.display(), e),
                     ))
                 })?;

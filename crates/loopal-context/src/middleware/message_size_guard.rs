@@ -1,6 +1,6 @@
 use async_trait::async_trait;
-use loopal_types::error::LoopalError;
-use loopal_types::middleware::{Middleware, MiddlewareContext};
+use loopal_error::LoopalError;
+use loopal_provider_api::{Middleware, MiddlewareContext};
 
 use crate::compaction::truncate_block_content;
 
@@ -31,7 +31,7 @@ impl Middleware for MessageSizeGuard {
 
             // Find the largest ToolResult block in this message and truncate it
             let largest = msg.content.iter().enumerate().max_by_key(|(_, block)| {
-                if let loopal_types::message::ContentBlock::ToolResult { content, .. } = block {
+                if let loopal_message::ContentBlock::ToolResult { content, .. } = block {
                     content.len()
                 } else {
                     0

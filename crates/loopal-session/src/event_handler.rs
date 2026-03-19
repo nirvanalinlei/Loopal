@@ -1,8 +1,8 @@
 //! AgentEvent → SessionState update logic. Routes events by `agent_name`:
 //! root → main display, sub-agent → `agent_handler`. `MessageRouted` → global feed.
 
-use loopal_types::event::{AgentEvent, AgentEventPayload};
-use loopal_types::tool::COMPLETION_PREFIX;
+use loopal_protocol::{AgentEvent, AgentEventPayload};
+use loopal_tool_api::COMPLETION_PREFIX;
 
 use crate::agent_handler::apply_agent_event;
 use crate::truncate::{truncate_json, truncate_result_for_storage};

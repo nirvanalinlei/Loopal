@@ -6,9 +6,9 @@ use ratatui::prelude::*;
 
 use loopal_agent::router::MessageRouter;
 use loopal_session::SessionController;
-use loopal_types::command::AgentMode;
-use loopal_types::envelope::{Envelope, MessageSource};
-use loopal_types::event::AgentEvent;
+use loopal_protocol::AgentMode;
+use loopal_protocol::{Envelope, MessageSource};
+use loopal_protocol::AgentEvent;
 use tokio::sync::mpsc;
 
 use crate::app::App;

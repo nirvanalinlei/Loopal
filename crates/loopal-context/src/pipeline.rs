@@ -1,5 +1,5 @@
-use loopal_types::error::LoopalError;
-use loopal_types::middleware::{Middleware, MiddlewareContext};
+use loopal_error::LoopalError;
+use loopal_provider_api::{Middleware, MiddlewareContext};
 
 /// Pipeline that runs middleware in order.
 pub struct ContextPipeline {

@@ -1,1 +1,1 @@
-pub use loopal_types::truncate::truncate_output;
+pub use loopal_tool_api::truncate_output;

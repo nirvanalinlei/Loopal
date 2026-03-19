@@ -1,0 +1,13 @@
+[package]
+name = "loopal-provider-api"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+loopal-error = { workspace = true }
+loopal-message = { workspace = true }
+loopal-tool-api = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+async-trait = { workspace = true }
+futures = { workspace = true }

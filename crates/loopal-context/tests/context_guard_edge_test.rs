@@ -1,6 +1,6 @@
 use loopal_context::middleware::ContextGuard;
-use loopal_types::message::{ContentBlock, Message, MessageRole};
-use loopal_types::middleware::{Middleware, MiddlewareContext};
+use loopal_message::{ContentBlock, Message, MessageRole};
+use loopal_provider_api::{Middleware, MiddlewareContext};
 
 fn make_ctx(messages: Vec<Message>, max_context_tokens: u32) -> MiddlewareContext {
     MiddlewareContext {

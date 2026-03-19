@@ -1,6 +1,6 @@
 use loopal_context::middleware::SmartCompact;
-use loopal_types::message::{ContentBlock, Message};
-use loopal_types::middleware::{Middleware, MiddlewareContext};
+use loopal_message::{ContentBlock, Message};
+use loopal_provider_api::{Middleware, MiddlewareContext};
 
 fn make_ctx(messages: Vec<Message>, max_context_tokens: u32) -> MiddlewareContext {
     MiddlewareContext {
@@ -46,7 +46,7 @@ async fn smart_compact_with_tool_io_messages() {
     let mw = SmartCompact::new(2);
 
     let tool_use_msg = Message {
-        role: loopal_types::message::MessageRole::Assistant,
+        role: loopal_message::MessageRole::Assistant,
         content: vec![ContentBlock::ToolUse {
             id: "tool_1".to_string(),
             name: "Bash".to_string(),
@@ -55,7 +55,7 @@ async fn smart_compact_with_tool_io_messages() {
     };
 
     let tool_result_msg = Message {
-        role: loopal_types::message::MessageRole::User,
+        role: loopal_message::MessageRole::User,
         content: vec![ContentBlock::ToolResult {
             tool_use_id: "tool_1".to_string(),
             content: "hello\n".to_string(),
@@ -64,7 +64,7 @@ async fn smart_compact_with_tool_io_messages() {
     };
 
     let error_tool_result_msg = Message {
-        role: loopal_types::message::MessageRole::User,
+        role: loopal_message::MessageRole::User,
         content: vec![ContentBlock::ToolResult {
             tool_use_id: "tool_2".to_string(),
             content: "command not found".to_string(),
@@ -97,7 +97,7 @@ async fn smart_compact_with_long_tool_result_truncation() {
 
     let long_content = "x".repeat(500);
     let tool_result_msg = Message {
-        role: loopal_types::message::MessageRole::User,
+        role: loopal_message::MessageRole::User,
         content: vec![ContentBlock::ToolResult {
             tool_use_id: "tool_1".to_string(),
             content: long_content,

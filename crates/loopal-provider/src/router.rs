@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use loopal_types::error::{LoopalError, ProviderError};
-use loopal_types::provider::Provider;
+use loopal_error::{LoopalError, ProviderError};
+use loopal_provider_api::Provider;
 
 use crate::model_info;
 

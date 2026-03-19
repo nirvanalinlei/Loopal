@@ -1,7 +1,6 @@
 use async_trait::async_trait;
-use loopal_types::error::LoopalError;
-use loopal_types::permission::PermissionLevel;
-use loopal_types::tool::{Tool, ToolContext, ToolResult};
+use loopal_error::LoopalError;
+use loopal_tool_api::{PermissionLevel, Tool, ToolContext, ToolResult};
 use serde_json::{json, Value};
 use std::time::Duration;
 use tokio::process::Command;
@@ -57,7 +56,7 @@ impl Tool for BashTool {
         let command = input["command"]
             .as_str()
             .ok_or_else(|| {
-                LoopalError::Tool(loopal_types::error::ToolError::InvalidInput(
+                LoopalError::Tool(loopal_error::ToolError::InvalidInput(
                     "command is required".into(),
                 ))
             })?;
@@ -122,7 +121,7 @@ fn format_result(
             Ok(ToolResult::error(format!("Failed to execute command: {e}")))
         }
         Err(ExecError::Timeout) => Err(LoopalError::Tool(
-            loopal_types::error::ToolError::Timeout(timeout_ms),
+            loopal_error::ToolError::Timeout(timeout_ms),
         )),
     }
 }

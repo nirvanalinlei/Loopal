@@ -1,10 +1,10 @@
 use std::time::Instant;
 
 use futures::StreamExt;
-use loopal_types::error::Result;
-use loopal_types::event::AgentEventPayload;
-use loopal_types::message::{ContentBlock, Message, MessageRole};
-use loopal_types::provider::{ChatParams, StopReason, StreamChunk};
+use loopal_error::Result;
+use loopal_protocol::AgentEventPayload;
+use loopal_message::{ContentBlock, Message, MessageRole};
+use loopal_provider_api::{ChatParams, StopReason, StreamChunk};
 use tracing::{error, info, warn};
 
 use super::runner::AgentLoopRunner;

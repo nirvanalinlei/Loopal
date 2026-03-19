@@ -1,4 +1,4 @@
-use loopal_types::sandbox::CommandDecision;
+use loopal_config::CommandDecision;
 
 use crate::sensitive_patterns::DANGEROUS_COMMAND_PATTERNS;
 

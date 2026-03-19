@@ -1,7 +1,6 @@
 use async_trait::async_trait;
-use loopal_types::error::LoopalError;
-use loopal_types::permission::PermissionLevel;
-use loopal_types::tool::{Tool, ToolContext, ToolResult};
+use loopal_error::LoopalError;
+use loopal_tool_api::{PermissionLevel, Tool, ToolContext, ToolResult};
 use regex::RegexBuilder;
 use serde_json::{json, Value};
 use std::path::PathBuf;
@@ -64,7 +63,7 @@ impl Tool for GrepTool {
         let pattern = input["pattern"]
             .as_str()
             .ok_or_else(|| {
-                LoopalError::Tool(loopal_types::error::ToolError::InvalidInput(
+                LoopalError::Tool(loopal_error::ToolError::InvalidInput(
                     "pattern is required".into(),
                 ))
             })?;
@@ -77,7 +76,7 @@ impl Tool for GrepTool {
             .size_limit(1_000_000)
             .build()
             .map_err(|e| {
-                LoopalError::Tool(loopal_types::error::ToolError::InvalidInput(
+                LoopalError::Tool(loopal_error::ToolError::InvalidInput(
                     format!("Invalid regex: {}", e),
                 ))
             })?;
@@ -93,7 +92,7 @@ impl Tool for GrepTool {
         let include_glob = match input["include"].as_str() {
             Some(g) => {
                 let glob = globset::Glob::new(g).map_err(|e| {
-                    LoopalError::Tool(loopal_types::error::ToolError::InvalidInput(
+                    LoopalError::Tool(loopal_error::ToolError::InvalidInput(
                         format!("Invalid include glob: {}", e),
                     ))
                 })?;

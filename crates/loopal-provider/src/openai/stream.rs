@@ -1,6 +1,6 @@
 use futures::stream::Stream;
-use loopal_types::error::{LoopalError, ProviderError};
-use loopal_types::provider::{StopReason, StreamChunk};
+use loopal_error::{LoopalError, ProviderError};
+use loopal_provider_api::{StopReason, StreamChunk};
 use serde_json::{json, Value};
 use std::collections::VecDeque;
 use std::pin::Pin;

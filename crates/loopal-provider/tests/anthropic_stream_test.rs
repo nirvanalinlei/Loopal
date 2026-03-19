@@ -1,5 +1,5 @@
-use loopal_types::error::{LoopalError, ProviderError};
-use loopal_types::provider::{StopReason, StreamChunk};
+use loopal_error::{LoopalError, ProviderError};
+use loopal_provider_api::{StopReason, StreamChunk};
 
 // Re-export stream internals via a test-support path.
 // Since parse_anthropic_event and ToolUseAccumulator are pub(crate), we test

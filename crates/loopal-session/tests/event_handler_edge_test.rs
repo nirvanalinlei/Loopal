@@ -2,8 +2,8 @@
 
 use loopal_session::event_handler::apply_event;
 use loopal_session::state::SessionState;
-use loopal_types::event::{AgentEvent, AgentEventPayload};
-use loopal_types::tool::COMPLETION_PREFIX;
+use loopal_protocol::{AgentEvent, AgentEventPayload};
+use loopal_tool_api::COMPLETION_PREFIX;
 
 fn make_state() -> SessionState {
     SessionState::new("test-model".to_string(), "act".to_string())

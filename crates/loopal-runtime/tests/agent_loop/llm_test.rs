@@ -1,8 +1,8 @@
 use loopal_runtime::AgentMode;
-use loopal_types::error::LoopalError;
-use loopal_types::event::AgentEventPayload;
-use loopal_types::message::MessageRole;
-use loopal_types::provider::{StopReason, StreamChunk};
+use loopal_error::LoopalError;
+use loopal_protocol::AgentEventPayload;
+use loopal_message::MessageRole;
+use loopal_provider_api::{StopReason, StreamChunk};
 
 use super::{make_runner, make_runner_with_mock_provider};
 
@@ -34,7 +34,7 @@ fn test_prepare_chat_params_plan_mode_has_suffix() {
 
 #[test]
 fn test_prepare_chat_params_with_messages() {
-    use loopal_types::message::Message;
+    use loopal_message::Message;
 
     let (mut runner, _rx) = make_runner();
     runner.params.messages.push(Message::user("Hello"));
@@ -100,7 +100,7 @@ async fn test_stream_llm_tool_use_response() {
 async fn test_stream_llm_error_in_stream() {
     let chunks = vec![
         Ok(StreamChunk::Text { text: "partial".to_string() }),
-        Err(LoopalError::Provider(loopal_types::error::ProviderError::StreamEnded)),
+        Err(LoopalError::Provider(loopal_error::ProviderError::StreamEnded)),
     ];
     let (mut runner, _event_rx, _input_tx, _ctrl_tx) = make_runner_with_mock_provider(chunks);
 

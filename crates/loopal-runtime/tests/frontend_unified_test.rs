@@ -1,17 +1,17 @@
 use loopal_runtime::frontend::{AutoDenyHandler, UnifiedFrontend};
-use loopal_types::agent_input::AgentInput;
-use loopal_types::command::AgentMode;
-use loopal_types::control::ControlCommand;
-use loopal_types::envelope::{Envelope, MessageSource};
-use loopal_types::event::AgentEventPayload;
-use loopal_types::frontend::AgentFrontend;
-use loopal_types::permission::PermissionDecision;
+use loopal_runtime::agent_input::AgentInput;
+use loopal_protocol::AgentMode;
+use loopal_protocol::ControlCommand;
+use loopal_protocol::{Envelope, MessageSource};
+use loopal_protocol::AgentEventPayload;
+use loopal_runtime::frontend::AgentFrontend;
+use loopal_tool_api::PermissionDecision;
 use tokio::sync::mpsc;
 use tokio_util::sync::CancellationToken;
 
 fn make_unified(
     agent_name: Option<String>,
-    event_tx: mpsc::Sender<loopal_types::event::AgentEvent>,
+    event_tx: mpsc::Sender<loopal_protocol::AgentEvent>,
     mailbox_rx: mpsc::Receiver<Envelope>,
     control_rx: mpsc::Receiver<ControlCommand>,
     cancel_token: Option<CancellationToken>,

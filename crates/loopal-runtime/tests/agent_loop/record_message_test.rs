@@ -1,4 +1,4 @@
-use loopal_types::message::{ContentBlock, MessageRole};
+use loopal_message::{ContentBlock, MessageRole};
 
 use super::make_runner;
 

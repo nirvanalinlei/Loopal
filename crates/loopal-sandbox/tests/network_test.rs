@@ -1,5 +1,5 @@
 use loopal_sandbox::network::{check_domain, extract_domain};
-use loopal_types::sandbox::NetworkPolicy;
+use loopal_config::NetworkPolicy;
 
 #[test]
 fn empty_policy_allows_all() {

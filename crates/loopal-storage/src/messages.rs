@@ -1,8 +1,8 @@
 use std::io::Write;
 use std::path::PathBuf;
 
-use loopal_types::error::StorageError;
-use loopal_types::message::Message;
+use loopal_error::StorageError;
+use loopal_message::Message;
 
 /// File-based message store using JSONL format.
 /// Messages are stored at `<base_dir>/sessions/<id>/messages.jsonl`.

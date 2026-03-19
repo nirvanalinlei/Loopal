@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use globset::{Glob, GlobSet, GlobSetBuilder};
-use loopal_types::sandbox::{PathDecision, ResolvedPolicy, SandboxPolicy};
+use loopal_config::{PathDecision, ResolvedPolicy, SandboxPolicy};
 
 /// Check whether a path operation is allowed under the resolved sandbox policy.
 ///

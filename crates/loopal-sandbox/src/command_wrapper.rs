@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
-use loopal_types::sandbox::{ResolvedPolicy, SandboxPolicy};
+use loopal_config::{ResolvedPolicy, SandboxPolicy};
 
 use crate::env_sanitizer::sanitize_current_env;
 use crate::platform;

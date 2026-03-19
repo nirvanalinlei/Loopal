@@ -16,9 +16,9 @@ use loopal_runtime::{AgentLoopParams, AgentMode, SessionManager, UnifiedFrontend
 use loopal_runtime::frontend::tui_permission::TuiPermissionHandler;
 use loopal_session::SessionController;
 use loopal_tui::command::merge_commands;
-use loopal_types::control::ControlCommand;
-use loopal_types::envelope::Envelope;
-use loopal_types::event::AgentEvent;
+use loopal_protocol::ControlCommand;
+use loopal_protocol::Envelope;
+use loopal_protocol::AgentEvent;
 
 use crate::cli::Cli;
 
@@ -56,7 +56,7 @@ pub async fn run() -> anyhow::Result<()> {
     };
 
     if !cli.prompt.is_empty() {
-        messages.push(loopal_types::message::Message::user(&cli.prompt.join(" ")));
+        messages.push(loopal_message::Message::user(&cli.prompt.join(" ")));
     }
 
     // Observation channel — runtime → TUI
@@ -151,18 +151,18 @@ pub async fn run() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn apply_cli_overrides(cli: &Cli, settings: &mut loopal_types::config::Settings) {
+fn apply_cli_overrides(cli: &Cli, settings: &mut loopal_config::Settings) {
     if let Some(model) = &cli.model {
         settings.model = model.clone();
     }
     if let Some(perm) = &cli.permission {
         settings.permission_mode = match perm.as_str() {
-            "bypass" | "yolo" => loopal_types::permission::PermissionMode::Bypass,
-            _ => loopal_types::permission::PermissionMode::Supervised,
+            "bypass" | "yolo" => loopal_tool_api::PermissionMode::Bypass,
+            _ => loopal_tool_api::PermissionMode::Supervised,
         };
     }
     if cli.no_sandbox {
-        settings.sandbox.policy = loopal_types::sandbox::SandboxPolicy::Disabled;
+        settings.sandbox.policy = loopal_config::SandboxPolicy::Disabled;
     }
 }
 

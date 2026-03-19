@@ -1,9 +1,9 @@
 mod stream;
 
 use async_trait::async_trait;
-use loopal_types::error::{LoopalError, ProviderError};
-use loopal_types::message::{ContentBlock, MessageRole};
-use loopal_types::provider::{ChatParams, ChatStream, Provider};
+use loopal_error::{LoopalError, ProviderError};
+use loopal_message::{ContentBlock, MessageRole};
+use loopal_provider_api::{ChatParams, ChatStream, Provider};
 use reqwest::Client;
 use serde_json::{json, Value};
 use std::collections::VecDeque;
@@ -112,7 +112,7 @@ impl Provider for GoogleProvider {
 
     async fn stream_chat(&self, params: &ChatParams) -> Result<ChatStream, LoopalError> {
         // Normalize messages: filter system messages and merge consecutive same-role
-        let normalized = loopal_types::message_normalize::normalize_messages(&params.messages);
+        let normalized = loopal_message::normalize_messages(&params.messages);
         let normalized_params = ChatParams {
             messages: normalized,
             ..params.clone()

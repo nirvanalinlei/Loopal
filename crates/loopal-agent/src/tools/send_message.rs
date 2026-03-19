@@ -1,8 +1,8 @@
 use async_trait::async_trait;
-use loopal_types::envelope::{Envelope, MessageSource};
-use loopal_types::error::LoopalError;
-use loopal_types::permission::PermissionLevel;
-use loopal_types::tool::{Tool, ToolContext, ToolResult};
+use loopal_protocol::{Envelope, MessageSource};
+use loopal_error::LoopalError;
+use loopal_tool_api::PermissionLevel;
+use loopal_tool_api::{Tool, ToolContext, ToolResult};
 
 use super::agent::extract_shared;
 
@@ -97,6 +97,6 @@ impl Tool for SendMessageTool {
 
 fn require_recipient(r: Option<&str>) -> Result<&str, LoopalError> {
     r.ok_or_else(|| LoopalError::Tool(
-        loopal_types::error::ToolError::InvalidInput("missing 'recipient'".into()),
+        loopal_error::ToolError::InvalidInput("missing 'recipient'".into()),
     ))
 }

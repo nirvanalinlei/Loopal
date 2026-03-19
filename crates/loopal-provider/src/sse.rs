@@ -1,5 +1,5 @@
 use futures::stream::Stream;
-use loopal_types::error::{LoopalError, ProviderError};
+use loopal_error::{LoopalError, ProviderError};
 use reqwest::Response;
 use std::pin::Pin;
 use std::task::{Context, Poll};

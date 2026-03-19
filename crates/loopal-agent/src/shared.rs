@@ -5,7 +5,7 @@ use tokio::sync::Mutex;
 use tokio_util::sync::CancellationToken;
 
 use loopal_kernel::Kernel;
-use loopal_types::event::AgentEvent;
+use loopal_protocol::AgentEvent;
 
 use crate::registry::AgentRegistry;
 use crate::router::MessageRouter;

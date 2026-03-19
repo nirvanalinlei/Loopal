@@ -1,4 +1,4 @@
-use loopal_types::sandbox::NetworkPolicy;
+use loopal_config::NetworkPolicy;
 
 /// Check whether a domain is allowed under the given network policy.
 ///

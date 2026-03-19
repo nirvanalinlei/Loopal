@@ -1,6 +1,6 @@
-use loopal_types::error::Result;
-use loopal_types::event::AgentEventPayload;
-use loopal_types::middleware::MiddlewareContext;
+use loopal_error::Result;
+use loopal_protocol::AgentEventPayload;
+use loopal_provider_api::MiddlewareContext;
 
 use super::runner::AgentLoopRunner;
 

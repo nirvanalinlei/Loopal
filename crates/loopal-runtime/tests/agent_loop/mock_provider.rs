@@ -9,13 +9,13 @@ use loopal_runtime::agent_loop::AgentLoopRunner;
 use loopal_runtime::frontend::AutoDenyHandler;
 use loopal_runtime::{AgentLoopParams, AgentMode, SessionManager, UnifiedFrontend};
 use loopal_storage::Session;
-use loopal_types::config::Settings;
-use loopal_types::control::ControlCommand;
-use loopal_types::envelope::Envelope;
-use loopal_types::error::LoopalError;
-use loopal_types::event::AgentEvent;
-use loopal_types::permission::PermissionMode;
-use loopal_types::provider::{ChatParams, ChatStream, Provider, StreamChunk};
+use loopal_config::Settings;
+use loopal_protocol::ControlCommand;
+use loopal_protocol::Envelope;
+use loopal_error::LoopalError;
+use loopal_protocol::AgentEvent;
+use loopal_tool_api::PermissionMode;
+use loopal_provider_api::{ChatParams, ChatStream, Provider, StreamChunk};
 use tokio::sync::mpsc;
 
 pub struct MockStreamChunks {
@@ -86,7 +86,7 @@ pub fn make_runner_with_mock_provider(
     ));
     let params = AgentLoopParams {
         kernel: Arc::new(kernel), session: test_session("test-mock"),
-        messages: vec![loopal_types::message::Message::user("hello")],
+        messages: vec![loopal_message::Message::user("hello")],
         model: "claude-sonnet-4-20250514".into(), system_prompt: "test".into(),
         mode: AgentMode::Act, permission_mode: PermissionMode::Bypass,
         max_turns: 5, frontend, session_manager: SessionManager::with_base_dir(tmp),
@@ -128,7 +128,7 @@ pub fn make_multi_runner(
     let tmp = std::env::temp_dir().join(format!("la_multi_{}", std::process::id()));
     let params = AgentLoopParams {
         kernel: Arc::new(kernel), session: test_session("test-multi"),
-        messages: vec![loopal_types::message::Message::user("go")],
+        messages: vec![loopal_message::Message::user("go")],
         model: "claude-sonnet-4-20250514".into(), system_prompt: "t".into(),
         mode: AgentMode::Act, permission_mode: PermissionMode::Bypass,
         max_turns: 10, frontend, session_manager: SessionManager::with_base_dir(tmp),
@@ -156,7 +156,7 @@ pub fn make_interactive_multi_runner(
     let tmp = std::env::temp_dir().join(format!("la_int_{}", std::process::id()));
     let params = AgentLoopParams {
         kernel: Arc::new(kernel), session: test_session("test-interactive"),
-        messages: vec![loopal_types::message::Message::user("go")],
+        messages: vec![loopal_message::Message::user("go")],
         model: "claude-sonnet-4-20250514".into(), system_prompt: "t".into(),
         mode: AgentMode::Act, permission_mode: PermissionMode::Bypass,
         max_turns: 10, frontend, session_manager: SessionManager::with_base_dir(tmp),

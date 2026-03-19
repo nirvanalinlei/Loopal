@@ -1,8 +1,8 @@
 use futures::StreamExt;
 use loopal_provider::AnthropicProvider;
-use loopal_types::error::{LoopalError, ProviderError};
-use loopal_types::message::Message;
-use loopal_types::provider::{ChatParams, Provider, StreamChunk};
+use loopal_error::{LoopalError, ProviderError};
+use loopal_message::Message;
+use loopal_provider_api::{ChatParams, Provider, StreamChunk};
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
@@ -31,7 +31,7 @@ async fn collect_chunks(
 }
 
 fn expect_err(
-    result: Result<loopal_types::provider::ChatStream, LoopalError>,
+    result: Result<loopal_provider_api::ChatStream, LoopalError>,
 ) -> LoopalError {
     match result {
         Err(e) => e,

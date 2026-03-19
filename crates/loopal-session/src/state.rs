@@ -3,7 +3,7 @@ use std::time::{Duration, Instant};
 
 use indexmap::IndexMap;
 
-use loopal_types::agent_state::ObservableAgentState;
+use loopal_protocol::ObservableAgentState;
 
 use crate::inbox::Inbox;
 use crate::message_log::{MessageFeed, MessageLogEntry};

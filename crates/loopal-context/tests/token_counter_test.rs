@@ -1,5 +1,5 @@
 use loopal_context::{estimate_messages_tokens, estimate_tokens};
-use loopal_types::message::{ContentBlock, Message, MessageRole};
+use loopal_message::{ContentBlock, Message, MessageRole};
 
 #[test]
 fn test_estimate_tokens_empty() {

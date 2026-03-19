@@ -8,9 +8,9 @@ use loopal_agent::shared::AgentShared;
 use loopal_agent::task_store::TaskStore;
 use loopal_agent::tools::channel::ChannelTool;
 use loopal_kernel::Kernel;
-use loopal_types::config::Settings;
-use loopal_types::event::AgentEvent;
-use loopal_types::tool::{Tool, ToolContext};
+use loopal_config::Settings;
+use loopal_protocol::AgentEvent;
+use loopal_tool_api::{Tool, ToolContext};
 use tokio::sync::{Mutex, mpsc};
 
 async fn make_ctx(agent_name: &str) -> (Arc<AgentShared>, ToolContext) {

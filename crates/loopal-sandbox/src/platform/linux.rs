@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use loopal_types::sandbox::{ResolvedPolicy, SandboxPolicy};
+use loopal_config::{ResolvedPolicy, SandboxPolicy};
 
 /// Build `bwrap` (bubblewrap) arguments for Linux namespace isolation.
 pub fn build_bwrap_args(policy: &ResolvedPolicy, cwd: &Path) -> Vec<String> {

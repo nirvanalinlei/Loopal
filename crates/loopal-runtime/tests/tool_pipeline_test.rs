@@ -1,7 +1,7 @@
 use loopal_kernel::Kernel;
 use loopal_runtime::tool_pipeline::execute_tool;
-use loopal_types::config::Settings;
-use loopal_types::tool::ToolContext;
+use loopal_config::Settings;
+use loopal_tool_api::ToolContext;
 use std::path::PathBuf;
 
 fn make_kernel() -> Kernel {

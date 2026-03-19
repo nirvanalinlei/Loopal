@@ -1,7 +1,7 @@
 //! Tests for forwarding specific AgentEvent variants through EventHandler.
 
 use loopal_tui::event::{AppEvent, EventHandler};
-use loopal_types::event::{AgentEvent, AgentEventPayload};
+use loopal_protocol::{AgentEvent, AgentEventPayload};
 use tokio::sync::mpsc;
 
 /// Helper: send an event and wait for a matching AppEvent::Agent variant.

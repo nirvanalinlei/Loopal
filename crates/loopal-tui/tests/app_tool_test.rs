@@ -1,8 +1,8 @@
 use loopal_session::SessionController;
 use loopal_tui::app::App;
 use loopal_tui::command::builtin_entries;
-use loopal_types::control::ControlCommand;
-use loopal_types::event::{AgentEvent, AgentEventPayload};
+use loopal_protocol::ControlCommand;
+use loopal_protocol::{AgentEvent, AgentEventPayload};
 use tokio::sync::mpsc;
 
 fn make_app() -> App {

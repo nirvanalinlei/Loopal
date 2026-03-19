@@ -1,5 +1,5 @@
 use loopal_storage::MessageStore;
-use loopal_types::message::Message;
+use loopal_message::Message;
 use tempfile::TempDir;
 
 #[test]
@@ -58,9 +58,9 @@ fn test_load_messages_preserves_roles() {
 
     let messages = store.load_messages(session_id).unwrap();
     assert_eq!(messages.len(), 3);
-    assert_eq!(messages[0].role, loopal_types::message::MessageRole::User);
-    assert_eq!(messages[1].role, loopal_types::message::MessageRole::Assistant);
-    assert_eq!(messages[2].role, loopal_types::message::MessageRole::System);
+    assert_eq!(messages[0].role, loopal_message::MessageRole::User);
+    assert_eq!(messages[1].role, loopal_message::MessageRole::Assistant);
+    assert_eq!(messages[2].role, loopal_message::MessageRole::System);
 }
 
 #[test]

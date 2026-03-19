@@ -1,4 +1,4 @@
-use loopal_types::tool::ToolDefinition;
+use loopal_tool_api::ToolDefinition;
 
 /// Build a full system prompt from parts.
 ///

@@ -1,8 +1,7 @@
 use async_trait::async_trait;
 use loopal_tools::ToolRegistry;
-use loopal_types::error::LoopalError;
-use loopal_types::permission::PermissionLevel;
-use loopal_types::tool::{Tool, ToolContext, ToolResult};
+use loopal_error::LoopalError;
+use loopal_tool_api::{PermissionLevel, Tool, ToolContext, ToolResult};
 use serde_json::{json, Value};
 
 struct MockTool {

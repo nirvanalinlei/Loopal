@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use loopal_types::permission::PermissionDecision;
+use loopal_tool_api::PermissionDecision;
 
 /// Permission handler trait for agent permission decisions.
 ///

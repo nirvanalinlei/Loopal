@@ -1,4 +1,4 @@
-use loopal_types::provider::ModelInfo;
+use loopal_provider_api::ModelInfo;
 
 struct ModelEntry {
     id: &'static str,

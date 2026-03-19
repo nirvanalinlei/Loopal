@@ -3,7 +3,7 @@ mod macos_tests {
     use std::path::PathBuf;
 
     use loopal_sandbox::platform::macos::generate_seatbelt_profile;
-    use loopal_types::sandbox::{
+    use loopal_config::{
         NetworkPolicy, ResolvedPolicy, SandboxPolicy,
     };
 

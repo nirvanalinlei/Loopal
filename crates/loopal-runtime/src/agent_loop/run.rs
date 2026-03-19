@@ -2,8 +2,8 @@
 //!
 //! Extracted from runner.rs to keep files under 200 lines.
 
-use loopal_types::error::{AgentOutput, LoopalError, Result, TerminateReason};
-use loopal_types::event::AgentEventPayload;
+use loopal_error::{AgentOutput, LoopalError, Result, TerminateReason};
+use loopal_protocol::AgentEventPayload;
 use tracing::{error, info};
 
 use super::WaitResult;

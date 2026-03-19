@@ -1,7 +1,7 @@
 use std::time::Duration;
 
-use loopal_types::error::HookError;
-use loopal_types::hook::{HookConfig, HookResult};
+use loopal_config::{HookConfig, HookResult};
+use loopal_error::HookError;
 use tokio::io::AsyncWriteExt;
 use tokio::process::Command;
 use tracing::debug;

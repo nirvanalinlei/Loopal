@@ -1,5 +1,5 @@
-use loopal_types::message::{ContentBlock, MessageRole};
-use loopal_types::provider::ChatParams;
+use loopal_message::{ContentBlock, MessageRole};
+use loopal_provider_api::ChatParams;
 use serde_json::{json, Value};
 
 use super::OpenAiProvider;

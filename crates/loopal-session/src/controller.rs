@@ -7,9 +7,9 @@ use std::sync::{Arc, Mutex, MutexGuard};
 
 use tokio::sync::mpsc;
 
-use loopal_types::command::AgentMode;
-use loopal_types::control::ControlCommand;
-use loopal_types::event::AgentEvent;
+use loopal_protocol::AgentMode;
+use loopal_protocol::ControlCommand;
+use loopal_protocol::AgentEvent;
 
 use crate::event_handler;
 use crate::state::SessionState;

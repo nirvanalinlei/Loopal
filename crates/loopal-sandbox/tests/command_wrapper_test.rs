@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use loopal_sandbox::command_wrapper::wrap_command;
-use loopal_types::sandbox::{
+use loopal_config::{
     NetworkPolicy, ResolvedPolicy, SandboxPolicy,
 };
 

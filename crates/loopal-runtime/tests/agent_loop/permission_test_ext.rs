@@ -7,10 +7,10 @@ use loopal_runtime::agent_loop::AgentLoopRunner;
 use loopal_runtime::frontend::TuiPermissionHandler;
 use loopal_runtime::{AgentLoopParams, AgentMode, SessionManager, UnifiedFrontend};
 use loopal_storage::Session;
-use loopal_types::config::Settings;
-use loopal_types::control::ControlCommand;
-use loopal_types::envelope::Envelope;
-use loopal_types::permission::{PermissionDecision, PermissionMode};
+use loopal_config::Settings;
+use loopal_protocol::ControlCommand;
+use loopal_protocol::Envelope;
+use loopal_tool_api::{PermissionDecision, PermissionMode};
 use tokio::sync::mpsc;
 
 use super::make_runner_with_channels;

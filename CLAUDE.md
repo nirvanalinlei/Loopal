@@ -16,7 +16,7 @@ LOOPAL_LOG=debug cargo run    # Run with debug logging
 
 ## Architecture
 
-Loopal is an AI coding agent with a TUI, structured as 11 Rust crates in a layered architecture. Data flows top-down; each layer only depends on layers below it.
+Loopal is an AI coding agent with a TUI, structured as 17 Rust crates in a layered architecture. Data flows top-down; each layer only depends on layers below it.
 
 ```
 src/main.rs (bootstrap + CLI)
@@ -29,8 +29,12 @@ src/main.rs (bootstrap + CLI)
     ├─ loopal-mcp          Model Context Protocol client. Spawns MCP servers, discovers tools.
     ├─ loopal-hooks        Pre/post tool-use lifecycle hooks executed as shell commands.
     ├─ loopal-storage      Session + message persistence (~/.loopal/sessions/).
-    ├─ loopal-config       5-layer config merge: defaults → global → project → local → env vars.
-    └─ loopal-types        Shared types: Message, AgentEvent, UserCommand, Tool/Provider/Middleware traits.
+    ├─ loopal-config       5-layer config merge + Settings/HookConfig/SandboxConfig types.
+    ├─ loopal-provider-api Provider/Middleware traits + ChatParams/StreamChunk/ModelInfo.
+    ├─ loopal-tool-api     Tool trait + PermissionLevel/Mode/Decision + truncate_output.
+    ├─ loopal-protocol     Envelope, AgentEvent, ControlCommand, AgentMode, AgentStatus.
+    ├─ loopal-message      Message, ContentBlock, normalize_messages.
+    └─ loopal-error        LoopalError + all sub-error types (Provider/Tool/Config/Storage/Hook/Mcp).
 ```
 
 ### Key data flow

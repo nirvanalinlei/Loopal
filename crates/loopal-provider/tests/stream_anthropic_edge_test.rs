@@ -1,8 +1,8 @@
 use futures::StreamExt;
 use loopal_provider::AnthropicProvider;
-use loopal_types::error::LoopalError;
-use loopal_types::message::Message;
-use loopal_types::provider::{ChatParams, Provider, StreamChunk};
+use loopal_error::LoopalError;
+use loopal_message::Message;
+use loopal_provider_api::{ChatParams, Provider, StreamChunk};
 use wiremock::matchers::{method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 

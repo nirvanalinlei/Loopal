@@ -3,7 +3,7 @@ use std::sync::Arc;
 use loopal_provider::{
     AnthropicProvider, GoogleProvider, OpenAiCompatProvider, OpenAiProvider, ProviderRegistry,
 };
-use loopal_types::config::Settings;
+use loopal_config::Settings;
 use tracing::info;
 
 /// Register all configured providers into the given registry.

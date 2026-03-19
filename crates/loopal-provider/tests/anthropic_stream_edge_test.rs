@@ -1,5 +1,5 @@
-use loopal_types::error::{LoopalError, ProviderError};
-use loopal_types::provider::{StopReason, StreamChunk};
+use loopal_error::{LoopalError, ProviderError};
+use loopal_provider_api::{StopReason, StreamChunk};
 
 fn parse_event(data: &str) -> (Vec<Result<StreamChunk, LoopalError>>, InlineState) {
     let mut state = InlineState::default();

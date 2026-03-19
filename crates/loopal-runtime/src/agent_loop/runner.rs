@@ -1,8 +1,8 @@
 use loopal_provider::get_model_info;
-use loopal_types::error::{AgentOutput, Result};
-use loopal_types::event::AgentEventPayload;
-use loopal_types::provider::StopReason;
-use loopal_types::tool::ToolContext;
+use loopal_error::{AgentOutput, Result};
+use loopal_protocol::AgentEventPayload;
+use loopal_provider_api::StopReason;
+use loopal_tool_api::ToolContext;
 use tracing::{Instrument, info, info_span, warn};
 
 use super::{AgentLoopParams, MAX_AUTO_CONTINUATIONS, TurnOutput};

@@ -1,5 +1,5 @@
 use loopal_provider::ProviderRegistry;
-use loopal_types::config::{OpenAiCompatConfig, ProviderConfig, ProvidersConfig, Settings};
+use loopal_config::{OpenAiCompatConfig, ProviderConfig, ProvidersConfig, Settings};
 
 #[test]
 fn test_register_providers_no_keys_no_crash() {

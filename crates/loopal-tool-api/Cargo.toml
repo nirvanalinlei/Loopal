@@ -1,0 +1,10 @@
+[package]
+name = "loopal-tool-api"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+loopal-error = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+async-trait = { workspace = true }

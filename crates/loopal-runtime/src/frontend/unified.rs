@@ -3,13 +3,13 @@ use tokio::sync::{Mutex, mpsc};
 use tracing::{info, warn};
 use tokio_util::sync::CancellationToken;
 
-use loopal_types::agent_input::AgentInput;
-use loopal_types::control::ControlCommand;
-use loopal_types::envelope::Envelope;
-use loopal_types::error::Result;
-use loopal_types::event::{AgentEvent, AgentEventPayload};
-use loopal_types::frontend::{AgentFrontend, EventEmitter};
-use loopal_types::permission::PermissionDecision;
+use crate::agent_input::AgentInput;
+use loopal_protocol::ControlCommand;
+use loopal_protocol::Envelope;
+use loopal_error::Result;
+use loopal_protocol::{AgentEvent, AgentEventPayload};
+use crate::frontend::traits::{AgentFrontend, EventEmitter};
+use loopal_tool_api::PermissionDecision;
 
 use super::permission_handler::PermissionHandler;
 use super::emitter::ChannelEventEmitter;
@@ -65,7 +65,7 @@ impl AgentFrontend for UnifiedFrontend {
             // Root: propagate send errors
             self.event_tx.send(event).await.map_err(|e| {
                 warn!(error = %e, "event channel closed");
-                loopal_types::error::LoopalError::Other(
+                loopal_error::LoopalError::Other(
                     "event channel closed".into(),
                 )
             })

@@ -1,4 +1,4 @@
-use loopal_types::tool::{Tool, ToolContext};
+use loopal_tool_api::{Tool, ToolContext};
 use loopal_tools::builtin::write::WriteTool;
 use serde_json::json;
 

@@ -1,8 +1,7 @@
 use async_trait::async_trait;
 use futures::StreamExt;
-use loopal_types::error::LoopalError;
-use loopal_types::permission::PermissionLevel;
-use loopal_types::tool::{Tool, ToolContext, ToolResult};
+use loopal_error::LoopalError;
+use loopal_tool_api::{PermissionLevel, Tool, ToolContext, ToolResult};
 use serde_json::{json, Value};
 
 use crate::truncate::truncate_output;
@@ -43,13 +42,13 @@ impl Tool for WebFetchTool {
         let url = input["url"]
             .as_str()
             .ok_or_else(|| {
-                LoopalError::Tool(loopal_types::error::ToolError::InvalidInput(
+                LoopalError::Tool(loopal_error::ToolError::InvalidInput(
                     "url is required".into(),
                 ))
             })?;
 
         let response = reqwest::get(url).await.map_err(|e| {
-            LoopalError::Tool(loopal_types::error::ToolError::ExecutionFailed(
+            LoopalError::Tool(loopal_error::ToolError::ExecutionFailed(
                 format!("HTTP request failed: {}", e),
             ))
         })?;
@@ -71,7 +70,7 @@ impl Tool for WebFetchTool {
         let mut stream = response.bytes_stream();
         while let Some(chunk) = stream.next().await {
             let chunk = chunk.map_err(|e| {
-                LoopalError::Tool(loopal_types::error::ToolError::ExecutionFailed(
+                LoopalError::Tool(loopal_error::ToolError::ExecutionFailed(
                     format!("Failed to read response body: {}", e),
                 ))
             })?;

@@ -88,7 +88,7 @@ fn test_load_settings_all_env_var_scenarios() {
         let settings = load_settings(tmp.path()).unwrap();
         assert_eq!(
             settings.permission_mode,
-            loopal_types::permission::PermissionMode::Supervised,
+            loopal_tool_api::PermissionMode::Supervised,
             "env var should override permission mode"
         );
 

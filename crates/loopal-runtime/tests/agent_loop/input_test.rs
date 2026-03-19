@@ -1,8 +1,8 @@
 use loopal_runtime::AgentMode;
-use loopal_types::control::ControlCommand;
-use loopal_types::envelope::{Envelope, MessageSource};
-use loopal_types::event::AgentEventPayload;
-use loopal_types::message::Message;
+use loopal_protocol::ControlCommand;
+use loopal_protocol::{Envelope, MessageSource};
+use loopal_protocol::AgentEventPayload;
+use loopal_message::Message;
 
 use super::{make_runner, make_runner_with_channels};
 
@@ -97,7 +97,7 @@ async fn test_wait_for_input_mode_switch() {
         make_runner_with_channels();
 
     ctrl_tx
-        .send(ControlCommand::ModeSwitch(loopal_types::command::AgentMode::Plan))
+        .send(ControlCommand::ModeSwitch(loopal_protocol::AgentMode::Plan))
         .await
         .unwrap();
 

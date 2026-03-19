@@ -1,7 +1,6 @@
 use async_trait::async_trait;
-use loopal_types::error::LoopalError;
-use loopal_types::permission::PermissionLevel;
-use loopal_types::tool::{Tool, ToolContext, ToolResult};
+use loopal_error::LoopalError;
+use loopal_tool_api::{PermissionLevel, Tool, ToolContext, ToolResult};
 use serde_json::{json, Value};
 use std::path::PathBuf;
 
@@ -44,14 +43,14 @@ impl Tool for WriteTool {
         let file_path = input["file_path"]
             .as_str()
             .ok_or_else(|| {
-                LoopalError::Tool(loopal_types::error::ToolError::InvalidInput(
+                LoopalError::Tool(loopal_error::ToolError::InvalidInput(
                     "file_path is required".into(),
                 ))
             })?;
         let content = input["content"]
             .as_str()
             .ok_or_else(|| {
-                LoopalError::Tool(loopal_types::error::ToolError::InvalidInput(
+                LoopalError::Tool(loopal_error::ToolError::InvalidInput(
                     "content is required".into(),
                 ))
             })?;
@@ -89,14 +88,14 @@ impl Tool for WriteTool {
 
         if let Some(parent) = path.parent() {
             tokio::fs::create_dir_all(parent).await.map_err(|e| {
-                LoopalError::Tool(loopal_types::error::ToolError::ExecutionFailed(
+                LoopalError::Tool(loopal_error::ToolError::ExecutionFailed(
                     format!("Failed to create directories: {}", e),
                 ))
             })?;
         }
 
         tokio::fs::write(&path, content).await.map_err(|e| {
-            LoopalError::Tool(loopal_types::error::ToolError::ExecutionFailed(
+            LoopalError::Tool(loopal_error::ToolError::ExecutionFailed(
                 format!("Failed to write {}: {}", path.display(), e),
             ))
         })?;

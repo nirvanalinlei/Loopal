@@ -601,12 +601,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dyn-clone"
-version = "1.0.20"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d0881ea181b1df73ff77ffaaf9c7544ecc11e82fba9b5f27b262a3c73a332555"
-
-[[package]]
 name = "either"
 version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1439,13 +1433,15 @@ dependencies = [
  "loopal-hooks",
  "loopal-kernel",
  "loopal-mcp",
+ "loopal-message",
+ "loopal-protocol",
  "loopal-provider",
  "loopal-runtime",
  "loopal-session",
  "loopal-storage",
+ "loopal-tool-api",
  "loopal-tools",
  "loopal-tui",
- "loopal-types",
  "tokio",
  "tracing",
  "tracing-appender",
@@ -1460,10 +1456,13 @@ dependencies = [
  "chrono",
  "loopal-config",
  "loopal-context",
+ "loopal-error",
  "loopal-kernel",
+ "loopal-message",
+ "loopal-protocol",
  "loopal-runtime",
  "loopal-storage",
- "loopal-types",
+ "loopal-tool-api",
  "serde",
  "serde_json",
  "tempfile",
@@ -1479,7 +1478,8 @@ version = "0.1.0"
 dependencies = [
  "dirs",
  "filetime",
- "loopal-types",
+ "loopal-error",
+ "loopal-tool-api",
  "serde",
  "serde_json",
  "tempfile",
@@ -1493,7 +1493,10 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "futures",
- "loopal-types",
+ "loopal-error",
+ "loopal-message",
+ "loopal-provider-api",
+ "loopal-tool-api",
  "serde",
  "serde_json",
  "thiserror 2.0.18",
@@ -1502,10 +1505,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "loopal-error"
+version = "0.1.0"
+dependencies = [
+ "thiserror 2.0.18",
+]
+
+[[package]]
 name = "loopal-hooks"
 version = "0.1.0"
 dependencies = [
- "loopal-types",
+ "loopal-config",
+ "loopal-error",
  "serde",
  "serde_json",
  "thiserror 2.0.18",
@@ -1518,12 +1529,14 @@ name = "loopal-kernel"
 version = "0.1.0"
 dependencies = [
  "loopal-config",
+ "loopal-error",
  "loopal-hooks",
  "loopal-mcp",
  "loopal-provider",
+ "loopal-provider-api",
  "loopal-sandbox",
+ "loopal-tool-api",
  "loopal-tools",
- "loopal-types",
  "thiserror 2.0.18",
  "tokio",
  "tracing",
@@ -1534,12 +1547,32 @@ name = "loopal-mcp"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "loopal-types",
+ "loopal-config",
+ "loopal-error",
+ "loopal-tool-api",
  "serde",
  "serde_json",
  "thiserror 2.0.18",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "loopal-message"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "loopal-protocol"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "serde",
+ "serde_json",
+ "uuid",
 ]
 
 [[package]]
@@ -1549,7 +1582,10 @@ dependencies = [
  "async-trait",
  "eventsource-stream",
  "futures",
- "loopal-types",
+ "loopal-error",
+ "loopal-message",
+ "loopal-provider-api",
+ "loopal-tool-api",
  "pin-project-lite",
  "reqwest",
  "serde",
@@ -1561,6 +1597,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "loopal-provider-api"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "futures",
+ "loopal-error",
+ "loopal-message",
+ "loopal-tool-api",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "loopal-runtime"
 version = "0.1.0"
 dependencies = [
@@ -1569,11 +1618,15 @@ dependencies = [
  "futures",
  "loopal-config",
  "loopal-context",
+ "loopal-error",
  "loopal-hooks",
  "loopal-kernel",
+ "loopal-message",
+ "loopal-protocol",
  "loopal-provider",
+ "loopal-provider-api",
  "loopal-storage",
- "loopal-types",
+ "loopal-tool-api",
  "serde",
  "serde_json",
  "tempfile",
@@ -1589,7 +1642,9 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "globset",
- "loopal-types",
+ "loopal-config",
+ "loopal-error",
+ "loopal-tool-api",
  "regex",
  "serde",
  "serde_json",
@@ -1606,7 +1661,8 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "indexmap",
- "loopal-types",
+ "loopal-protocol",
+ "loopal-tool-api",
  "serde_json",
  "tokio",
 ]
@@ -1617,7 +1673,8 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "loopal-config",
- "loopal-types",
+ "loopal-error",
+ "loopal-message",
  "serde",
  "serde_json",
  "tempfile",
@@ -1627,13 +1684,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "loopal-tool-api"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "loopal-error",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "loopal-tools"
 version = "0.1.0"
 dependencies = [
  "async-trait",
  "futures",
  "globset",
- "loopal-types",
+ "loopal-error",
+ "loopal-tool-api",
  "regex",
  "reqwest",
  "serde",
@@ -1654,10 +1722,10 @@ dependencies = [
  "indexmap",
  "loopal-agent",
  "loopal-config",
+ "loopal-protocol",
  "loopal-provider",
  "loopal-runtime",
  "loopal-session",
- "loopal-types",
  "pulldown-cmark",
  "ratatui",
  "serde_json",
@@ -1668,21 +1736,6 @@ dependencies = [
  "tracing",
  "two-face",
  "unicode-width",
-]
-
-[[package]]
-name = "loopal-types"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "chrono",
- "futures",
- "schemars",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
- "tokio",
- "uuid",
 ]
 
 [[package]]
@@ -2511,30 +2564,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "schemars"
-version = "0.8.22"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3fbf2ae1b8bc8e02df939598064d22402220cd5bbcca1c76f7d6a310974d5615"
-dependencies = [
- "dyn-clone",
- "schemars_derive",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "schemars_derive"
-version = "0.8.22"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "32e265784ad618884abaea0600a9adf15393368d840e0222d101a072f3f7534d"
-dependencies = [
- "proc-macro2",
- "quote",
- "serde_derive_internals",
- "syn 2.0.117",
-]
-
-[[package]]
 name = "scopeguard"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2593,17 +2622,6 @@ name = "serde_derive"
 version = "1.0.228"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d540f220d3187173da220f885ab66608367b6574e925011a9353e4badda91d79"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.117",
-]
-
-[[package]]
-name = "serde_derive_internals"
-version = "0.29.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18d26a20a969b9e3fdf2fc2d9f21eda6c40e2de84c9408bb5d3b05d499aae711"
 dependencies = [
  "proc-macro2",
  "quote",

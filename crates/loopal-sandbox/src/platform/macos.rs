@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use loopal_types::sandbox::{ResolvedPolicy, SandboxPolicy};
+use loopal_config::{ResolvedPolicy, SandboxPolicy};
 
 /// Generate a Seatbelt profile string for `sandbox-exec -p`.
 ///

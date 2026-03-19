@@ -4,7 +4,8 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-loopal-types = { workspace = true }
+loopal-protocol = { workspace = true }
+loopal-tool-api = { workspace = true }
 indexmap = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }

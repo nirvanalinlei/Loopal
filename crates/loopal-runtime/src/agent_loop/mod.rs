@@ -13,10 +13,10 @@ use std::sync::Arc;
 use loopal_context::ContextPipeline;
 use loopal_kernel::Kernel;
 use loopal_storage::Session;
-use loopal_types::error::{AgentOutput, Result};
-use loopal_types::frontend::AgentFrontend;
-use loopal_types::message::Message;
-use loopal_types::permission::PermissionMode;
+use loopal_error::{AgentOutput, Result};
+use crate::frontend::traits::AgentFrontend;
+use loopal_message::Message;
+use loopal_tool_api::PermissionMode;
 
 use crate::mode::AgentMode;
 use crate::session::SessionManager;

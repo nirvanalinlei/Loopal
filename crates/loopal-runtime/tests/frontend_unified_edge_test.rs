@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use loopal_runtime::frontend::{PermissionHandler, TuiPermissionHandler};
-use loopal_types::event::AgentEventPayload;
-use loopal_types::permission::PermissionDecision;
+use loopal_protocol::AgentEventPayload;
+use loopal_tool_api::PermissionDecision;
 use tokio::sync::mpsc;
 
 #[tokio::test]

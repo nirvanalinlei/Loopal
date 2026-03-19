@@ -1,4 +1,4 @@
-use loopal_types::message::{ContentBlock, Message, MessageRole};
+use loopal_message::{ContentBlock, Message, MessageRole};
 
 /// Verify the preflight helper functions from the compaction module
 /// (which preflight.rs delegates to) work correctly in the context

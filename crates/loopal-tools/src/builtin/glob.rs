@@ -1,8 +1,7 @@
 use async_trait::async_trait;
 use globset::{Glob, GlobSetBuilder};
-use loopal_types::error::LoopalError;
-use loopal_types::permission::PermissionLevel;
-use loopal_types::tool::{Tool, ToolContext, ToolResult};
+use loopal_error::LoopalError;
+use loopal_tool_api::{PermissionLevel, Tool, ToolContext, ToolResult};
 use serde_json::{json, Value};
 use std::path::PathBuf;
 use walkdir::WalkDir;
@@ -56,7 +55,7 @@ impl Tool for GlobTool {
         let pattern = input["pattern"]
             .as_str()
             .ok_or_else(|| {
-                LoopalError::Tool(loopal_types::error::ToolError::InvalidInput(
+                LoopalError::Tool(loopal_error::ToolError::InvalidInput(
                     "pattern is required".into(),
                 ))
             })?;
@@ -79,7 +78,7 @@ impl Tool for GlobTool {
             .unwrap_or(0);
 
         let glob = Glob::new(pattern).map_err(|e| {
-            LoopalError::Tool(loopal_types::error::ToolError::InvalidInput(
+            LoopalError::Tool(loopal_error::ToolError::InvalidInput(
                 format!("Invalid glob pattern: {}", e),
             ))
         })?;
@@ -87,7 +86,7 @@ impl Tool for GlobTool {
         let mut builder = GlobSetBuilder::new();
         builder.add(glob);
         let glob_set = builder.build().map_err(|e| {
-            LoopalError::Tool(loopal_types::error::ToolError::InvalidInput(
+            LoopalError::Tool(loopal_error::ToolError::InvalidInput(
                 format!("Failed to build glob set: {}", e),
             ))
         })?;

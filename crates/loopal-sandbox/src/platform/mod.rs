@@ -11,7 +11,7 @@ pub mod linux;
 
 use std::path::Path;
 
-use loopal_types::sandbox::ResolvedPolicy;
+use loopal_config::ResolvedPolicy;
 
 /// Build OS-level sandbox command prefix (program + args).
 ///

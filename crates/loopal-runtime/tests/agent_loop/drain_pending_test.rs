@@ -13,13 +13,13 @@ use loopal_kernel::Kernel;
 use loopal_runtime::frontend::AutoDenyHandler;
 use loopal_runtime::{AgentLoopParams, AgentMode, SessionManager, UnifiedFrontend, agent_loop};
 use loopal_storage::Session;
-use loopal_types::config::Settings;
-use loopal_types::control::ControlCommand;
-use loopal_types::envelope::{Envelope, MessageSource};
-use loopal_types::error::LoopalError;
-use loopal_types::event::AgentEvent;
-use loopal_types::permission::PermissionMode;
-use loopal_types::provider::{ChatParams, ChatStream, Provider, StopReason, StreamChunk};
+use loopal_config::Settings;
+use loopal_protocol::ControlCommand;
+use loopal_protocol::{Envelope, MessageSource};
+use loopal_error::LoopalError;
+use loopal_protocol::AgentEvent;
+use loopal_tool_api::PermissionMode;
+use loopal_provider_api::{ChatParams, ChatStream, Provider, StopReason, StreamChunk};
 use tokio::sync::mpsc;
 
 struct TextOnlyProvider {
@@ -100,7 +100,7 @@ async fn test_subagent_drains_pending_before_exit() {
     let params = AgentLoopParams {
         kernel,
         session,
-        messages: vec![loopal_types::message::Message::user("run task")],
+        messages: vec![loopal_message::Message::user("run task")],
         model: "claude-sonnet-4-20250514".into(),
         system_prompt: "test".into(),
         mode: AgentMode::Act,

@@ -4,12 +4,14 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-loopal-types = { workspace = true }
+loopal-error = { workspace = true }
+loopal-config = { workspace = true }
+loopal-tool-api = { workspace = true }
+loopal-provider-api = { workspace = true }
 loopal-tools = { workspace = true }
 loopal-provider = { workspace = true }
 loopal-hooks = { workspace = true }
 loopal-mcp = { workspace = true }
-loopal-config = { workspace = true }
 loopal-sandbox = { workspace = true }
 tokio = { workspace = true }
 thiserror = { workspace = true }

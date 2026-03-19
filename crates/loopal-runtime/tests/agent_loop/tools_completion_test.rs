@@ -1,10 +1,10 @@
 //! Tests for AttemptCompletion detection in execute_tools().
 
 use async_trait::async_trait;
-use loopal_types::error::LoopalError;
-use loopal_types::message::ContentBlock;
-use loopal_types::permission::{PermissionLevel, PermissionMode};
-use loopal_types::tool::{Tool, ToolContext, ToolResult, COMPLETION_PREFIX};
+use loopal_error::LoopalError;
+use loopal_message::ContentBlock;
+use loopal_tool_api::{PermissionLevel, PermissionMode};
+use loopal_tool_api::{Tool, ToolContext, ToolResult, COMPLETION_PREFIX};
 
 use super::make_runner_with_channels;
 

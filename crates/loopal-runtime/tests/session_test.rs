@@ -1,5 +1,5 @@
 use loopal_runtime::SessionManager;
-use loopal_types::message::Message;
+use loopal_message::Message;
 use std::path::Path;
 use tempfile::TempDir;
 

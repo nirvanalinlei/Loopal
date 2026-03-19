@@ -1,6 +1,6 @@
 use loopal_context::middleware::PriceLimit;
-use loopal_types::message::Message;
-use loopal_types::middleware::{Middleware, MiddlewareContext};
+use loopal_message::Message;
+use loopal_provider_api::{Middleware, MiddlewareContext};
 
 /// Helper to build a MiddlewareContext with given messages and max_context_tokens.
 fn make_ctx(messages: Vec<Message>, max_context_tokens: u32) -> MiddlewareContext {

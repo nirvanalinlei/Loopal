@@ -1,9 +1,9 @@
 use loopal_hooks::run_hook;
-use loopal_types::hook::HookConfig;
+use loopal_config::HookConfig;
 
 fn make_hook(command: &str, timeout_ms: u64) -> HookConfig {
     HookConfig {
-        event: loopal_types::hook::HookEvent::PreToolUse,
+        event: loopal_config::HookEvent::PreToolUse,
         command: command.to_string(),
         tool_filter: None,
         timeout_ms,
@@ -183,7 +183,7 @@ async fn test_run_hook_combined_stdout_stderr() {
 async fn test_run_hook_post_tool_use_event() {
     // Verify that hooks with PostToolUse event type also work correctly
     let hook = HookConfig {
-        event: loopal_types::hook::HookEvent::PostToolUse,
+        event: loopal_config::HookEvent::PostToolUse,
         command: "echo post-hook".to_string(),
         tool_filter: None,
         timeout_ms: 5000,

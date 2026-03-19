@@ -1,6 +1,6 @@
 use loopal_runtime::check_permission;
-use loopal_types::permission::{PermissionDecision, PermissionLevel, PermissionMode};
-use loopal_types::tool::{Tool, ToolContext, ToolResult};
+use loopal_tool_api::{PermissionDecision, PermissionLevel, PermissionMode};
+use loopal_tool_api::{Tool, ToolContext, ToolResult};
 
 /// A dummy tool that returns a configurable permission level.
 struct DummyTool {
@@ -25,7 +25,7 @@ impl Tool for DummyTool {
         &self,
         _input: serde_json::Value,
         _ctx: &ToolContext,
-    ) -> Result<ToolResult, loopal_types::error::LoopalError> {
+    ) -> Result<ToolResult, loopal_error::LoopalError> {
         Ok(ToolResult::success("ok"))
     }
 }

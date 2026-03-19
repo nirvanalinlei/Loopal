@@ -1,7 +1,7 @@
 //! Agent event handling — updates AgentViewState tracking.
 
-use loopal_types::agent_state::AgentStatus;
-use loopal_types::event::AgentEventPayload;
+use loopal_protocol::AgentStatus;
+use loopal_protocol::AgentEventPayload;
 
 use crate::state::SessionState;
 

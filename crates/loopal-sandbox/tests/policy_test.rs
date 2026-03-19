@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use loopal_sandbox::policy::resolve_policy;
-use loopal_types::sandbox::{
+use loopal_config::{
     FileSystemPolicy, NetworkPolicy, SandboxConfig, SandboxPolicy,
 };
 

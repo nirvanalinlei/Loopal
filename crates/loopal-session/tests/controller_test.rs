@@ -1,8 +1,8 @@
 //! Tests for SessionController event handling and state management.
 
 use loopal_session::SessionController;
-use loopal_types::control::ControlCommand;
-use loopal_types::event::{AgentEvent, AgentEventPayload};
+use loopal_protocol::ControlCommand;
+use loopal_protocol::{AgentEvent, AgentEventPayload};
 use tokio::sync::mpsc;
 
 fn make_controller() -> (SessionController, mpsc::Receiver<ControlCommand>, mpsc::Receiver<bool>) {

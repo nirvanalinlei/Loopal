@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use loopal_sandbox::path_checker::check_path;
-use loopal_types::sandbox::{
+use loopal_config::{
     NetworkPolicy, PathDecision, ResolvedPolicy, SandboxPolicy,
 };
 

@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use loopal_types::error::LoopalError;
-use loopal_types::permission::PermissionLevel;
-use loopal_types::tool::{Tool, ToolContext, ToolResult};
+use loopal_error::LoopalError;
+use loopal_tool_api::PermissionLevel;
+use loopal_tool_api::{Tool, ToolContext, ToolResult};
 
 use crate::config::{AgentConfig, load_agent_configs};
 use crate::shared::AgentShared;
@@ -120,7 +120,7 @@ pub(crate) fn extract_shared(ctx: &ToolContext) -> Result<Arc<AgentShared>, Loop
 
 fn require_str<'a>(input: &'a serde_json::Value, key: &str) -> Result<&'a str, LoopalError> {
     input.get(key).and_then(|v| v.as_str()).ok_or_else(|| {
-        LoopalError::Tool(loopal_types::error::ToolError::InvalidInput(
+        LoopalError::Tool(loopal_error::ToolError::InvalidInput(
             format!("missing '{key}'"),
         ))
     })

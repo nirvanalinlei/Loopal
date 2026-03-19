@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use tokio::sync::{Mutex, mpsc};
 
-use loopal_types::envelope::Envelope;
-use loopal_types::event::{AgentEvent, AgentEventPayload};
+use loopal_protocol::Envelope;
+use loopal_protocol::{AgentEvent, AgentEventPayload};
 
 use super::channels::ChannelStore;
 

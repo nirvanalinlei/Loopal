@@ -7,11 +7,11 @@ use loopal_runtime::agent_loop::AgentLoopRunner;
 use loopal_runtime::frontend::{AutoDenyHandler, TuiPermissionHandler};
 use loopal_runtime::{AgentLoopParams, AgentMode, SessionManager, UnifiedFrontend};
 use loopal_storage::Session;
-use loopal_types::config::Settings;
-use loopal_types::control::ControlCommand;
-use loopal_types::envelope::Envelope;
-use loopal_types::event::AgentEvent;
-use loopal_types::permission::PermissionMode;
+use loopal_config::Settings;
+use loopal_protocol::ControlCommand;
+use loopal_protocol::Envelope;
+use loopal_protocol::AgentEvent;
+use loopal_tool_api::PermissionMode;
 use tokio::sync::mpsc;
 
 mod auto_continue_test;

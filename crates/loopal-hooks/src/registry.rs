@@ -1,4 +1,4 @@
-use loopal_types::hook::{HookConfig, HookEvent};
+use loopal_config::{HookConfig, HookEvent};
 
 /// Registry holding hook configurations and matching logic.
 pub struct HookRegistry {

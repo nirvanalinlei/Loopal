@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use loopal_types::error::LoopalError;
-use loopal_types::permission::PermissionLevel;
-use loopal_types::tool::{Tool, ToolContext, ToolResult};
+use loopal_error::LoopalError;
+use loopal_tool_api::PermissionLevel;
+use loopal_tool_api::{Tool, ToolContext, ToolResult};
 
 use super::agent::extract_shared;
 use crate::shared::AgentShared;
@@ -93,7 +93,7 @@ async fn op_publish(
     let ch = require_channel(channel)?;
     let message = input.get("message").and_then(|v| v.as_str())
         .ok_or_else(|| LoopalError::Tool(
-            loopal_types::error::ToolError::InvalidInput("missing 'message'".into()),
+            loopal_error::ToolError::InvalidInput("missing 'message'".into()),
         ))?;
 
     let subscribers = shared.router.publish(ch, &shared.agent_name, message).await;
@@ -135,6 +135,6 @@ async fn op_list(shared: &Arc<AgentShared>) -> Result<ToolResult, LoopalError> {
 
 fn require_channel(ch: Option<&str>) -> Result<&str, LoopalError> {
     ch.ok_or_else(|| LoopalError::Tool(
-        loopal_types::error::ToolError::InvalidInput("missing 'channel'".into()),
+        loopal_error::ToolError::InvalidInput("missing 'channel'".into()),
     ))
 }

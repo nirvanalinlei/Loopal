@@ -1,5 +1,5 @@
 use loopal_hooks::HookRegistry;
-use loopal_types::hook::{HookConfig, HookEvent};
+use loopal_config::{HookConfig, HookEvent};
 
 fn make_hook(event: HookEvent, tool_filter: Option<Vec<String>>) -> HookConfig {
     HookConfig {

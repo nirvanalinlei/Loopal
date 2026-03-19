@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
-use loopal_types::control::ControlCommand;
-use loopal_types::envelope::Envelope;
-use loopal_types::event::AgentEventPayload;
-use loopal_types::message::Message;
+use loopal_protocol::ControlCommand;
+use loopal_protocol::Envelope;
+use loopal_protocol::AgentEventPayload;
+use loopal_message::Message;
 
 use super::{make_runner, make_runner_with_channels};
 
@@ -15,8 +15,8 @@ fn test_model_info_defaults_for_unknown_model() {
     use loopal_runtime::frontend::AutoDenyHandler;
     use loopal_runtime::{AgentLoopParams, AgentMode, SessionManager, UnifiedFrontend};
     use loopal_storage::Session;
-    use loopal_types::config::Settings;
-    use loopal_types::permission::PermissionMode;
+    use loopal_config::Settings;
+    use loopal_tool_api::PermissionMode;
     use loopal_runtime::agent_loop::AgentLoopRunner;
     use tokio::sync::mpsc;
 

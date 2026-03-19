@@ -1,6 +1,6 @@
-use loopal_types::event::AgentEventPayload;
-use loopal_types::message::{ContentBlock, MessageRole};
-use loopal_types::permission::PermissionMode;
+use loopal_protocol::AgentEventPayload;
+use loopal_message::{ContentBlock, MessageRole};
+use loopal_tool_api::PermissionMode;
 
 use super::make_runner_with_channels;
 

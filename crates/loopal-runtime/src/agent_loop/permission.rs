@@ -1,5 +1,5 @@
-use loopal_types::error::Result;
-use loopal_types::permission::PermissionDecision;
+use loopal_error::Result;
+use loopal_tool_api::PermissionDecision;
 
 use super::runner::AgentLoopRunner;
 

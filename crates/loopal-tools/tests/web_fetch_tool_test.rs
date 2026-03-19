@@ -1,5 +1,4 @@
-use loopal_types::permission::PermissionLevel;
-use loopal_types::tool::{Tool, ToolContext};
+use loopal_tool_api::{PermissionLevel, Tool, ToolContext};
 use loopal_tools::builtin::web_fetch::WebFetchTool;
 use serde_json::json;
 

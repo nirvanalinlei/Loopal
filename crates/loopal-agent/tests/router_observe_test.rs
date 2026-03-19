@@ -1,6 +1,6 @@
 use loopal_agent::router::MessageRouter;
-use loopal_types::envelope::{Envelope, MessageSource};
-use loopal_types::event::{AgentEvent, AgentEventPayload};
+use loopal_protocol::{Envelope, MessageSource};
+use loopal_protocol::{AgentEvent, AgentEventPayload};
 use tokio::sync::mpsc;
 
 fn make_router() -> (MessageRouter, mpsc::Receiver<AgentEvent>) {

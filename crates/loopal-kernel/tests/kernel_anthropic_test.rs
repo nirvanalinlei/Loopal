@@ -1,5 +1,5 @@
 use loopal_provider::ProviderRegistry;
-use loopal_types::config::{ProviderConfig, ProvidersConfig, Settings};
+use loopal_config::{ProviderConfig, ProvidersConfig, Settings};
 
 #[test]
 fn test_register_providers_with_config_api_key() {

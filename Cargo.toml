@@ -8,7 +8,11 @@ license = "MIT"
 resolver = "2"
 members = [
     ".",
-    "crates/loopal-types",
+    "crates/loopal-error",
+    "crates/loopal-message",
+    "crates/loopal-protocol",
+    "crates/loopal-tool-api",
+    "crates/loopal-provider-api",
     "crates/loopal-config",
     "crates/loopal-storage",
     "crates/loopal-provider",
@@ -81,7 +85,11 @@ two-face = "0.5"
 wiremock = "0.6"
 
 # Workspace crates
-loopal-types = { path = "crates/loopal-types" }
+loopal-error = { path = "crates/loopal-error" }
+loopal-message = { path = "crates/loopal-message" }
+loopal-protocol = { path = "crates/loopal-protocol" }
+loopal-tool-api = { path = "crates/loopal-tool-api" }
+loopal-provider-api = { path = "crates/loopal-provider-api" }
 loopal-config = { path = "crates/loopal-config" }
 loopal-storage = { path = "crates/loopal-storage" }
 loopal-provider = { path = "crates/loopal-provider" }
@@ -101,7 +109,9 @@ name = "loopal"
 path = "src/main.rs"
 
 [dependencies]
-loopal-types = { workspace = true }
+loopal-message = { workspace = true }
+loopal-protocol = { workspace = true }
+loopal-tool-api = { workspace = true }
 loopal-config = { workspace = true }
 loopal-storage = { workspace = true }
 loopal-provider = { workspace = true }

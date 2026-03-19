@@ -1,7 +1,6 @@
 use async_trait::async_trait;
-use loopal_types::error::LoopalError;
-use loopal_types::permission::PermissionLevel;
-use loopal_types::tool::{Tool, ToolContext, ToolResult};
+use loopal_error::LoopalError;
+use loopal_tool_api::{PermissionLevel, Tool, ToolContext, ToolResult};
 use serde_json::{json, Value};
 use std::path::PathBuf;
 
@@ -46,7 +45,7 @@ impl Tool for ReadTool {
         let file_path = input["file_path"]
             .as_str()
             .ok_or_else(|| {
-                LoopalError::Tool(loopal_types::error::ToolError::InvalidInput(
+                LoopalError::Tool(loopal_error::ToolError::InvalidInput(
                     "file_path is required".into(),
                 ))
             })?;
@@ -61,7 +60,7 @@ impl Tool for ReadTool {
             }
 
         let content = tokio::fs::read_to_string(&path).await.map_err(|e| {
-            LoopalError::Tool(loopal_types::error::ToolError::ExecutionFailed(
+            LoopalError::Tool(loopal_error::ToolError::ExecutionFailed(
                 format!("Failed to read {}: {}", path.display(), e),
             ))
         })?;

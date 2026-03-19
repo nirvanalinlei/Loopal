@@ -1,9 +1,8 @@
 use async_trait::async_trait;
 use futures::StreamExt;
-use loopal_types::error::LoopalError;
-use loopal_types::message::{ContentBlock, Message, MessageRole};
-use loopal_types::middleware::{Middleware, MiddlewareContext};
-use loopal_types::provider::{ChatParams, StreamChunk};
+use loopal_error::LoopalError;
+use loopal_message::{ContentBlock, Message, MessageRole};
+use loopal_provider_api::{ChatParams, Middleware, MiddlewareContext, StreamChunk};
 
 use crate::compaction::compact_messages;
 use crate::token_counter::estimate_messages_tokens;

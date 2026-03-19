@@ -1,5 +1,5 @@
 use loopal_agent::router::MessageRouter;
-use loopal_types::event::AgentEvent;
+use loopal_protocol::AgentEvent;
 use tokio::sync::mpsc;
 
 fn make_router() -> (MessageRouter, mpsc::Receiver<AgentEvent>) {

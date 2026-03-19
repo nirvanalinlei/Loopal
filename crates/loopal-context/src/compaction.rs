@@ -1,4 +1,4 @@
-use loopal_types::message::{ContentBlock, Message, MessageRole};
+use loopal_message::{ContentBlock, Message, MessageRole};
 
 /// Remove oldest messages, keeping the system message and the last `keep_last` messages.
 pub fn compact_messages(messages: &mut Vec<Message>, keep_last: usize) {

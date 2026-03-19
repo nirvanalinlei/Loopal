@@ -1,7 +1,7 @@
 //! Tests for max_tokens auto-continuation in execute_turn.
 
-use loopal_types::error::TerminateReason;
-use loopal_types::provider::{StopReason, StreamChunk};
+use loopal_error::TerminateReason;
+use loopal_provider_api::{StopReason, StreamChunk};
 
 use super::mock_provider::make_multi_runner;
 

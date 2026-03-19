@@ -1,4 +1,4 @@
-use loopal_types::error::LoopalError;
+use loopal_error::LoopalError;
 use regex::Regex;
 use std::path::PathBuf;
 use walkdir::WalkDir;
@@ -21,7 +21,7 @@ impl OutputMode {
             Some("content") => Ok(Self::Content),
             Some("count") => Ok(Self::Count),
             Some(other) => Err(LoopalError::Tool(
-                loopal_types::error::ToolError::InvalidInput(format!(
+                loopal_error::ToolError::InvalidInput(format!(
                     "Invalid output_mode: {other}. Use content, files_with_matches, or count"
                 )),
             )),

@@ -1,5 +1,5 @@
 use loopal_context::{compact_messages, find_largest_tool_result, truncate_block_content};
-use loopal_types::message::{ContentBlock, Message, MessageRole};
+use loopal_message::{ContentBlock, Message, MessageRole};
 
 #[test]
 fn test_compact_keeps_system_and_last_n() {

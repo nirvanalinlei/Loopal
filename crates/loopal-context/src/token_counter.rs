@@ -1,4 +1,4 @@
-use loopal_types::message::Message;
+use loopal_message::Message;
 
 /// Estimate token count: roughly 1 token per 4 characters.
 pub fn estimate_tokens(text: &str) -> u32 {
