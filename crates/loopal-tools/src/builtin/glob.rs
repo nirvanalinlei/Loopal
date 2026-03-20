@@ -6,6 +6,8 @@ use serde_json::{json, Value};
 use std::path::PathBuf;
 use walkdir::WalkDir;
 
+use super::grep_search::type_to_extensions;
+
 pub struct GlobTool;
 
 /// Default maximum number of results returned per page.
@@ -42,6 +44,10 @@ impl Tool for GlobTool {
                 "offset": {
                     "type": "integer",
                     "description": "Number of results to skip for pagination (default: 0)"
+                },
+                "type": {
+                    "type": "string",
+                    "description": "File type filter (e.g. js, py, rust, go)"
                 }
             }
         })
@@ -91,6 +97,10 @@ impl Tool for GlobTool {
             ))
         })?;
 
+        let type_exts: Option<Vec<&str>> = input["type"].as_str().map(|t| {
+            type_to_extensions(t).unwrap_or_default() // unknown type → empty → no matches
+        });
+
         let mut matches: Vec<(PathBuf, std::time::SystemTime)> = Vec::new();
 
         for entry in WalkDir::new(&search_path)
@@ -102,6 +112,13 @@ impl Tool for GlobTool {
             if let Ok(rel) = path.strip_prefix(&search_path)
                 && glob_set.is_match(rel)
             {
+                // Apply type extension filter
+                if let Some(ref exts) = type_exts {
+                    let file_ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
+                    if !exts.contains(&file_ext) {
+                        continue;
+                    }
+                }
                 let mtime = entry
                     .metadata()
                     .ok()

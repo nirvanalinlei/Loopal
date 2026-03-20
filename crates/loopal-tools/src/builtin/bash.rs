@@ -17,7 +17,7 @@ impl Default for BashTool {
     }
 }
 
-const DEFAULT_TIMEOUT_MS: u64 = 120_000;
+const DEFAULT_TIMEOUT_MS: u64 = 300_000;
 const MAX_OUTPUT_LINES: usize = 2000;
 const MAX_OUTPUT_BYTES: usize = 512_000;
 
@@ -42,7 +42,15 @@ impl Tool for BashTool {
                 },
                 "timeout": {
                     "type": "integer",
-                    "description": "Timeout in milliseconds (default: 120000)"
+                    "description": "Timeout in milliseconds (default: 300000, max: 600000)"
+                },
+                "run_in_background": {
+                    "type": "boolean",
+                    "description": "Run the command as a background task (default: false)"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Description of the background task"
                 }
             }
         })
@@ -53,16 +61,19 @@ impl Tool for BashTool {
     }
 
     async fn execute(&self, input: Value, ctx: &ToolContext) -> Result<ToolResult, LoopalError> {
-        let command = input["command"]
-            .as_str()
-            .ok_or_else(|| {
-                LoopalError::Tool(loopal_error::ToolError::InvalidInput(
-                    "command is required".into(),
-                ))
-            })?;
+        let command = input["command"].as_str().ok_or_else(|| {
+            LoopalError::Tool(loopal_error::ToolError::InvalidInput(
+                "command is required".into(),
+            ))
+        })?;
+
+        let run_in_background = input["run_in_background"].as_bool().unwrap_or(false);
+
+        if run_in_background {
+            return super::background::spawn::spawn_background(command, &input, ctx).await;
+        }
 
         let timeout_ms = input["timeout"].as_u64().unwrap_or(DEFAULT_TIMEOUT_MS);
-
         let result = execute_command(command, &ctx.cwd, timeout_ms).await;
         format_result(result, timeout_ms)
     }
