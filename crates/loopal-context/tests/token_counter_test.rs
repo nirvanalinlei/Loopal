@@ -55,6 +55,7 @@ fn test_estimate_messages_tokens_sum() {
 fn test_estimate_messages_tokens_includes_tool_io() {
     let msgs = vec![
         Message {
+            id: None,
             role: MessageRole::Assistant,
             content: vec![
                 ContentBlock::Text { text: "Let me read the file.".into() },
@@ -66,6 +67,7 @@ fn test_estimate_messages_tokens_includes_tool_io() {
             ],
         },
         Message {
+            id: None,
             role: MessageRole::User,
             content: vec![ContentBlock::ToolResult {
                 tool_use_id: "call_1".into(),

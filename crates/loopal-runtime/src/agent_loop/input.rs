@@ -22,8 +22,8 @@ impl AgentLoopRunner {
         match input {
             Some(AgentInput::Message(env)) => {
                 let text = format_envelope_content(&env);
-                let user_msg = Message::user(&text);
-                if let Err(e) = self.params.session_manager.save_message(&self.params.session.id, &user_msg) {
+                let mut user_msg = Message::user(&text);
+                if let Err(e) = self.params.session_manager.save_message(&self.params.session.id, &mut user_msg) {
                     error!(error = %e, "failed to persist message");
                 }
                 self.params.messages.push(user_msg);
@@ -51,6 +51,10 @@ impl AgentLoopRunner {
             }
             ControlCommand::Clear => {
                 info!("clearing conversation history");
+                // Write marker FIRST so crash-resume sees the clear
+                if let Err(e) = self.params.session_manager.clear_history(&self.params.session.id) {
+                    error!(error = %e, "failed to persist clear marker");
+                }
                 self.params.messages.clear();
                 self.turn_count = 0;
                 self.total_input_tokens = 0;
@@ -65,6 +69,10 @@ impl AgentLoopRunner {
             }
             ControlCommand::Compact => {
                 info!(before = self.params.messages.len(), "compacting messages");
+                // Write marker FIRST so crash-resume sees the compact
+                if let Err(e) = self.params.session_manager.compact_history(&self.params.session.id, 10) {
+                    error!(error = %e, "failed to persist compact marker");
+                }
                 compact_messages(&mut self.params.messages, 10);
                 info!(after = self.params.messages.len(), "compaction complete");
                 Ok(Some(WaitResult::Continue))

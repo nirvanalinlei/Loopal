@@ -1699,6 +1699,7 @@ dependencies = [
  "loopal-protocol",
  "loopal-provider",
  "loopal-provider-api",
+ "loopal-session",
  "loopal-storage",
  "loopal-tool-api",
  "serde",

@@ -143,6 +143,11 @@ impl SessionController {
         });
     }
 
+    /// Load historical display messages (e.g., after session resume).
+    pub fn load_display_history(&self, display_msgs: Vec<DisplayMessage>) {
+        self.lock().messages = display_msgs;
+    }
+
     // === Event handling ===
 
     /// Process an AgentEvent by updating internal state.

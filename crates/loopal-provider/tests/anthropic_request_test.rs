@@ -45,6 +45,7 @@ fn test_build_messages_with_tool_use() {
     let params = make_params(
         vec![
             Message {
+                id: None,
                 role: MessageRole::Assistant,
                 content: vec![ContentBlock::ToolUse {
                     id: "tu_1".to_string(),
@@ -53,6 +54,7 @@ fn test_build_messages_with_tool_use() {
                 }],
             },
             Message {
+                id: None,
                 role: MessageRole::User,
                 content: vec![ContentBlock::ToolResult {
                     tool_use_id: "tu_1".to_string(),
@@ -96,6 +98,7 @@ fn test_build_messages_with_image() {
     let provider = make_provider();
     let params = make_params(
         vec![Message {
+            id: None,
             role: MessageRole::User,
             content: vec![ContentBlock::Image {
                 source: ImageSource {

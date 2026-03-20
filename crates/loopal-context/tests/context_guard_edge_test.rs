@@ -17,6 +17,7 @@ fn make_ctx(messages: Vec<Message>, max_context_tokens: u32) -> MiddlewareContex
 
 fn big_tool_result_message(size: usize) -> Message {
     Message {
+        id: None,
         role: MessageRole::User,
         content: vec![ContentBlock::ToolResult {
             tool_use_id: "t1".into(),

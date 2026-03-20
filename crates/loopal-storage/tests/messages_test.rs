@@ -1,4 +1,5 @@
 use loopal_storage::MessageStore;
+use loopal_storage::TaggedEntry;
 use loopal_message::Message;
 use tempfile::TempDir;
 
@@ -91,8 +92,8 @@ fn test_load_messages_handles_empty_lines() {
     let session_dir = tmp.path().join("sessions").join(session_id);
     std::fs::create_dir_all(&session_dir).unwrap();
 
-    let msg = Message::user("hello");
-    let line = serde_json::to_string(&msg).unwrap();
+    let entry = TaggedEntry::Message(Message::user("hello"));
+    let line = serde_json::to_string(&entry).unwrap();
     let content = format!("{}\n\n{}\n\n", line, line);
     std::fs::write(session_dir.join("messages.jsonl"), content).unwrap();
 

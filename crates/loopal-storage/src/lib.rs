@@ -1,5 +1,9 @@
+pub mod entry;
 pub mod messages;
+pub mod replay;
 pub mod sessions;
 
+pub use entry::{Marker, TaggedEntry};
 pub use messages::MessageStore;
+pub use replay::replay;
 pub use sessions::{Session, SessionStore};

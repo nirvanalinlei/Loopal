@@ -55,10 +55,10 @@ fn test_save_message_and_resume() {
     let session_id = session.id.clone();
 
     // Save a few messages
-    let msg1 = Message::user("hello");
-    let msg2 = Message::assistant("hi there");
-    mgr.save_message(&session_id, &msg1).unwrap();
-    mgr.save_message(&session_id, &msg2).unwrap();
+    let mut msg1 = Message::user("hello");
+    let mut msg2 = Message::assistant("hi there");
+    mgr.save_message(&session_id, &mut msg1).unwrap();
+    mgr.save_message(&session_id, &mut msg2).unwrap();
 
     // Resume and verify messages
     let (_resumed, messages) = mgr.resume_session(&session_id).unwrap();

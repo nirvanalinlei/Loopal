@@ -68,14 +68,21 @@ impl AgentLoopRunner {
 
     /// One complete turn: LLM → [tools → LLM]* → returns when no tool calls.
     ///
-    /// Tracks `last_text` across iterations so that stream errors or max_turns
-    /// at the boundary still carry the best-effort output from earlier in the turn.
-    /// Automatically re-calls LLM when output is truncated by max_tokens.
+    /// Each LLM call uses a **working copy** of `params.messages`:
+    /// middleware compaction and preflight truncation only affect the copy,
+    /// so the persistent history (`params.messages` + storage) is never polluted.
     pub(super) async fn execute_turn(&mut self) -> Result<TurnOutput> {
         let mut last_text = String::new();
         let mut continuation_count: u32 = 0;
         loop {
-            let (text, tool_uses, stream_error, stop_reason) = self.stream_llm().await?;
+            // Clone persistent history → middleware → preflight → send to LLM
+            let mut working = self.params.messages.clone();
+            if !self.execute_middleware_on(&mut working).await? {
+                return Ok(TurnOutput { output: last_text });
+            }
+            self.preflight_check_on(&mut working);
+            let (text, tool_uses, stream_error, stop_reason) =
+                self.stream_llm_with(&working).await?;
 
             // max_tokens + tool calls → tool arguments may be truncated, discard tools
             if stop_reason == StopReason::MaxTokens && !tool_uses.is_empty() {
@@ -93,6 +100,7 @@ impl AgentLoopRunner {
                 return Ok(TurnOutput { output: last_text });
             }
 
+            // Record to persistent history (params.messages + storage)
             self.record_assistant_message(&text, &tool_uses);
             if !text.is_empty() { last_text.clone_from(&text); }
 
@@ -113,20 +121,18 @@ impl AgentLoopRunner {
                 return Ok(TurnOutput { output: last_text });
             }
 
-            // No tool calls = turn naturally complete
             if tool_uses.is_empty() {
                 return Ok(TurnOutput { output: text });
             }
 
-            // Execute tools, check for AttemptCompletion
+            // Execute tools → results appended to persistent params.messages
             let completion_result = self.execute_tools(tool_uses).await?;
             self.inject_pending_messages().await;
-            continuation_count = 0; // Reset after successful tool execution
+            continuation_count = 0;
 
             if let Some(result) = completion_result {
                 return Ok(TurnOutput { output: result });
             }
-            // Continue inner loop: call LLM again with tool results
         }
     }
 

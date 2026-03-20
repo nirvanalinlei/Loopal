@@ -55,6 +55,7 @@ fn test_build_messages_tool_result_becomes_tool_role() {
     let provider = make_provider();
     let params = make_params(
         vec![Message {
+            id: None,
             role: MessageRole::User,
             content: vec![ContentBlock::ToolResult {
                 tool_use_id: "call_123".to_string(),
@@ -77,6 +78,7 @@ fn test_build_messages_assistant_with_tool_calls() {
     let provider = make_provider();
     let params = make_params(
         vec![Message {
+            id: None,
             role: MessageRole::Assistant,
             content: vec![
                 ContentBlock::Text {

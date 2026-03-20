@@ -45,6 +45,7 @@ async fn smart_compact_with_tool_io_messages() {
     let mw = SmartCompact::new(2);
 
     let tool_use_msg = Message {
+        id: None,
         role: loopal_message::MessageRole::Assistant,
         content: vec![ContentBlock::ToolUse {
             id: "tool_1".to_string(),
@@ -54,6 +55,7 @@ async fn smart_compact_with_tool_io_messages() {
     };
 
     let tool_result_msg = Message {
+        id: None,
         role: loopal_message::MessageRole::User,
         content: vec![ContentBlock::ToolResult {
             tool_use_id: "tool_1".to_string(),
@@ -63,6 +65,7 @@ async fn smart_compact_with_tool_io_messages() {
     };
 
     let error_tool_result_msg = Message {
+        id: None,
         role: loopal_message::MessageRole::User,
         content: vec![ContentBlock::ToolResult {
             tool_use_id: "tool_2".to_string(),
@@ -96,6 +99,7 @@ async fn smart_compact_with_long_tool_result_truncation() {
 
     let long_content = "x".repeat(500);
     let tool_result_msg = Message {
+        id: None,
         role: loopal_message::MessageRole::User,
         content: vec![ContentBlock::ToolResult {
             tool_use_id: "tool_1".to_string(),

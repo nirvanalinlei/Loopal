@@ -24,6 +24,7 @@ fn test_system_message() {
 #[test]
 fn test_text_content_ignores_non_text_blocks() {
     let msg = Message {
+        id: None,
         role: MessageRole::User,
         content: vec![
             ContentBlock::Text { text: "a".into() },
@@ -41,6 +42,7 @@ fn test_text_content_ignores_non_text_blocks() {
 #[test]
 fn test_text_content_empty() {
     let msg = Message {
+        id: None,
         role: MessageRole::User,
         content: vec![],
     };
@@ -56,6 +58,7 @@ fn test_estimated_token_count_text_only() {
 #[test]
 fn test_estimated_token_count_tool_use() {
     let msg = Message {
+        id: None,
         role: MessageRole::Assistant,
         content: vec![ContentBlock::ToolUse {
             id: "1".into(),
@@ -75,6 +78,7 @@ fn test_estimated_token_count_tool_use() {
 #[test]
 fn test_estimated_token_count_tool_result() {
     let msg = Message {
+        id: None,
         role: MessageRole::User,
         content: vec![ContentBlock::ToolResult {
             tool_use_id: "1".into(),
@@ -89,6 +93,7 @@ fn test_estimated_token_count_tool_result() {
 #[test]
 fn test_estimated_token_count_image() {
     let msg = Message {
+        id: None,
         role: MessageRole::User,
         content: vec![ContentBlock::Image {
             source: ImageSource {
@@ -105,6 +110,7 @@ fn test_estimated_token_count_image() {
 #[test]
 fn test_estimated_token_count_mixed() {
     let msg = Message {
+        id: None,
         role: MessageRole::Assistant,
         content: vec![
             ContentBlock::Text {

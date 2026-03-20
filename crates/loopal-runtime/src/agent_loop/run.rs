@@ -25,8 +25,6 @@ impl AgentLoopRunner {
                 }
             }
 
-            if !self.execute_middleware().await? { break; }
-
             if self.turn_count >= self.params.max_turns {
                 self.emit(AgentEventPayload::MaxTurnsReached { turns: self.turn_count }).await?;
                 return Ok(AgentOutput {

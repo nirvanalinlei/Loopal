@@ -15,6 +15,7 @@ use loopal_kernel::Kernel;
 use loopal_runtime::{AgentLoopParams, AgentMode, SessionManager, UnifiedFrontend, agent_loop};
 use loopal_runtime::frontend::tui_permission::TuiPermissionHandler;
 use loopal_runtime::frontend::question_handler::TuiQuestionHandler;
+use loopal_runtime::projection::project_messages;
 use loopal_protocol::UserQuestionResponse;
 use loopal_session::SessionController;
 use loopal_tui::command::merge_commands;
@@ -122,6 +123,12 @@ pub async fn run() -> anyhow::Result<()> {
     let session_ctrl = SessionController::new(
         model.clone(), mode_str, control_tx, permission_tx, question_tx,
     );
+
+    // Restore display history when resuming a session
+    if cli.resume.is_some() {
+        let display = project_messages(&messages);
+        session_ctrl.load_display_history(display);
+    }
 
     let mut context_pipeline = ContextPipeline::new();
     context_pipeline.add(Box::new(MessageSizeGuard));

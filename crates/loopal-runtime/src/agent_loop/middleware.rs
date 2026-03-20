@@ -1,22 +1,35 @@
 use loopal_error::Result;
+use loopal_message::Message;
 use loopal_protocol::AgentEventPayload;
 use loopal_provider_api::MiddlewareContext;
 
 use super::runner::AgentLoopRunner;
 
 impl AgentLoopRunner {
-    /// Execute the middleware pipeline. Returns false if the loop should break.
+    /// Execute the middleware pipeline on the persistent history.
+    /// Works on a clone — persistent history is never modified.
+    /// Returns false if the loop should break (middleware error).
     pub async fn execute_middleware(&mut self) -> Result<bool> {
-        // Resolve provider for summarization (used by SmartCompact middleware)
-        let summarization_provider = self.params.kernel.resolve_provider(&self.params.model).ok();
+        let mut working = self.params.messages.clone();
+        self.execute_middleware_on(&mut working).await
+    }
+
+    /// Execute the middleware pipeline on a provided working copy.
+    /// The caller owns `working` and decides what to do with the result.
+    pub async fn execute_middleware_on(
+        &mut self,
+        working: &mut Vec<Message>,
+    ) -> Result<bool> {
+        let summarization_provider =
+            self.params.kernel.resolve_provider(&self.params.model).ok();
 
         let mut mw_ctx = MiddlewareContext {
-            messages: self.params.messages.clone(),
+            messages: working.clone(),
             system_prompt: self.params.system_prompt.clone(),
             model: self.params.model.clone(),
             total_input_tokens: self.total_input_tokens,
             total_output_tokens: self.total_output_tokens,
-            total_cost: 0.0, // no longer tracked, kept for middleware interface compatibility
+            total_cost: 0.0,
             max_context_tokens: self.max_context_tokens,
             summarization_provider,
         };
@@ -31,10 +44,9 @@ impl AgentLoopRunner {
             return Ok(false);
         }
 
-        // Apply any middleware modifications (e.g., compacted messages)
-        self.params.messages = mw_ctx.messages;
+        *working = mw_ctx.messages;
 
-        let after = self.params.messages.len();
+        let after = working.len();
         if after < before {
             let note = format!("[context compacted: {} → {} messages]\n", before, after);
             self.emit(AgentEventPayload::Stream { text: note }).await?;

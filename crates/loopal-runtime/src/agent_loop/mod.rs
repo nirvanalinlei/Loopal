@@ -1,5 +1,6 @@
 mod input;
 mod llm;
+mod llm_record;
 mod middleware;
 mod permission;
 mod preflight;

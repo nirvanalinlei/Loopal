@@ -114,8 +114,8 @@ impl AgentLoopRunner {
             }
         }
 
-        let tool_results_msg = Message { role: MessageRole::User, content: tool_result_blocks };
-        if let Err(e) = self.params.session_manager.save_message(&self.params.session.id, &tool_results_msg) {
+        let mut tool_results_msg = Message { id: None, role: MessageRole::User, content: tool_result_blocks };
+        if let Err(e) = self.params.session_manager.save_message(&self.params.session.id, &mut tool_results_msg) {
             error!(error = %e, "failed to persist message");
         }
         self.params.messages.push(tool_results_msg);
@@ -129,7 +129,14 @@ impl AgentLoopRunner {
         for env in pending {
             let text = format_envelope_content(&env);
             info!(len = text.len(), "injecting pending message");
-            self.params.messages.push(Message::user(&text));
+            let mut user_msg = Message::user(&text);
+            if let Err(e) = self.params.session_manager.save_message(
+                &self.params.session.id,
+                &mut user_msg,
+            ) {
+                error!(error = %e, "failed to persist injected message");
+            }
+            self.params.messages.push(user_msg);
         }
     }
 }

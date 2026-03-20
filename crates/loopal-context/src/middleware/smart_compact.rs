@@ -144,6 +144,7 @@ impl Middleware for SmartCompact {
 
                 // Replace old messages with a summary system message + kept messages
                 let summary_msg = Message {
+                    id: None,
                     role: MessageRole::User,
                     content: vec![ContentBlock::Text {
                         text: format!(

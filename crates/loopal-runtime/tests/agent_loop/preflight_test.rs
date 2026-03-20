@@ -5,6 +5,7 @@ use loopal_message::{ContentBlock, Message, MessageRole};
 /// they'd be used during a preflight check.
 fn big_tool_result_message(size: usize) -> Message {
     Message {
+        id: None,
         role: MessageRole::User,
         content: vec![ContentBlock::ToolResult {
             tool_use_id: "t1".into(),

@@ -4,8 +4,12 @@ use std::path::PathBuf;
 use loopal_error::StorageError;
 use loopal_message::Message;
 
+use crate::entry::TaggedEntry;
+use crate::replay;
+
 /// File-based message store using JSONL format.
-/// Messages are stored at `<base_dir>/sessions/<id>/messages.jsonl`.
+/// Each line is a `TaggedEntry` (message or marker).
+/// Stored at `<base_dir>/sessions/<id>/messages.jsonl`.
 pub struct MessageStore {
     base_dir: PathBuf,
 }
@@ -30,47 +34,67 @@ impl MessageStore {
             .join("messages.jsonl")
     }
 
-    /// Append a message to the session's JSONL file.
-    pub fn append_message(&self, session_id: &str, message: &Message) -> Result<(), StorageError> {
+    fn append_line(&self, session_id: &str, line: &str) -> Result<(), StorageError> {
         let path = self.messages_file(session_id);
-
-        // Ensure parent directory exists
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent)?;
         }
-
-        let line = serde_json::to_string(message)
-            .map_err(|e| StorageError::Serialization(e.to_string()))?;
-
         let mut file = std::fs::OpenOptions::new()
             .create(true)
             .append(true)
             .open(&path)?;
         writeln!(file, "{}", line)?;
-
         Ok(())
     }
 
-    /// Load all messages for a session from the JSONL file.
-    pub fn load_messages(&self, session_id: &str) -> Result<Vec<Message>, StorageError> {
-        let path = self.messages_file(session_id);
+    /// Append any entry (message or marker) to the JSONL file.
+    pub fn append_entry(
+        &self,
+        session_id: &str,
+        entry: &TaggedEntry,
+    ) -> Result<(), StorageError> {
+        let line = serde_json::to_string(entry)
+            .map_err(|e| StorageError::Serialization(e.to_string()))?;
+        self.append_line(session_id, &line)
+    }
 
+    /// Convenience: append a message as a `TaggedEntry::Message`.
+    pub fn append_message(
+        &self,
+        session_id: &str,
+        message: &Message,
+    ) -> Result<(), StorageError> {
+        self.append_entry(session_id, &TaggedEntry::Message(message.clone()))
+    }
+
+    /// Load raw entries without replay (useful for debugging).
+    pub fn load_entries(
+        &self,
+        session_id: &str,
+    ) -> Result<Vec<TaggedEntry>, StorageError> {
+        let path = self.messages_file(session_id);
         if !path.exists() {
             return Ok(Vec::new());
         }
-
         let contents = std::fs::read_to_string(&path)?;
-        let mut messages = Vec::new();
-
+        let mut entries = Vec::new();
         for line in contents.lines() {
             if line.trim().is_empty() {
                 continue;
             }
-            let message: Message = serde_json::from_str(line)
+            let entry: TaggedEntry = serde_json::from_str(line)
                 .map_err(|e| StorageError::Serialization(e.to_string()))?;
-            messages.push(message);
+            entries.push(entry);
         }
+        Ok(entries)
+    }
 
-        Ok(messages)
+    /// Load messages for a session, replaying any markers (Clear/CompactTo).
+    pub fn load_messages(
+        &self,
+        session_id: &str,
+    ) -> Result<Vec<Message>, StorageError> {
+        let entries = self.load_entries(session_id)?;
+        Ok(replay::replay(entries))
     }
 }

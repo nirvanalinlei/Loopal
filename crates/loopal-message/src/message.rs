@@ -10,6 +10,8 @@ pub enum MessageRole {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Message {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
     pub role: MessageRole,
     pub content: Vec<ContentBlock>,
 }
@@ -17,6 +19,7 @@ pub struct Message {
 impl Message {
     pub fn user(text: &str) -> Self {
         Self {
+            id: None,
             role: MessageRole::User,
             content: vec![ContentBlock::Text {
                 text: text.to_string(),
@@ -26,6 +29,7 @@ impl Message {
 
     pub fn assistant(text: &str) -> Self {
         Self {
+            id: None,
             role: MessageRole::Assistant,
             content: vec![ContentBlock::Text {
                 text: text.to_string(),
@@ -35,11 +39,18 @@ impl Message {
 
     pub fn system(text: &str) -> Self {
         Self {
+            id: None,
             role: MessageRole::System,
             content: vec![ContentBlock::Text {
                 text: text.to_string(),
             }],
         }
+    }
+
+    /// Return a clone with the given ID assigned.
+    pub fn with_id(mut self, id: String) -> Self {
+        self.id = Some(id);
+        self
     }
 
     pub fn text_content(&self) -> String {

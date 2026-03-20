@@ -91,6 +91,7 @@ fn test_compact_keep_zero() {
 
 fn tool_result_message(id: &str, content: &str) -> Message {
     Message {
+        id: None,
         role: MessageRole::User,
         content: vec![ContentBlock::ToolResult {
             tool_use_id: id.to_string(),

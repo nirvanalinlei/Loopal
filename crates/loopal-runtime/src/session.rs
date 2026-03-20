@@ -1,8 +1,9 @@
 use std::path::Path;
 
-use loopal_storage::{MessageStore, Session, SessionStore};
 use loopal_error::Result;
 use loopal_message::Message;
+use loopal_storage::entry::{Marker, TaggedEntry};
+use loopal_storage::{MessageStore, Session, SessionStore};
 use tracing::info;
 
 /// Manages session creation, resumption, and message persistence.
@@ -44,8 +45,36 @@ impl SessionManager {
     }
 
     /// Persist a message to the session's message store.
-    pub fn save_message(&self, session_id: &str, message: &Message) -> Result<()> {
+    /// Automatically assigns a UUID in-place if the message has no id,
+    /// so the caller's copy stays in sync with storage.
+    pub fn save_message(&self, session_id: &str, message: &mut Message) -> Result<()> {
+        if message.id.is_none() {
+            message.id = Some(uuid::Uuid::new_v4().to_string());
+        }
         self.message_store.append_message(session_id, message)?;
+        Ok(())
+    }
+
+    /// Append a Clear marker to the event log.
+    /// On next load, all messages before this marker are discarded.
+    pub fn clear_history(&self, session_id: &str) -> Result<()> {
+        let entry = TaggedEntry::Marker(Marker::Clear {
+            timestamp: chrono::Utc::now().to_rfc3339(),
+        });
+        self.message_store.append_entry(session_id, &entry)?;
+        info!(session_id = %session_id, "clear marker written");
+        Ok(())
+    }
+
+    /// Append a CompactTo marker to the event log.
+    /// On next load, only the last `keep_last` messages are retained.
+    pub fn compact_history(&self, session_id: &str, keep_last: usize) -> Result<()> {
+        let entry = TaggedEntry::Marker(Marker::CompactTo {
+            keep_last,
+            timestamp: chrono::Utc::now().to_rfc3339(),
+        });
+        self.message_store.append_entry(session_id, &entry)?;
+        info!(session_id = %session_id, keep_last, "compact marker written");
         Ok(())
     }
 
@@ -61,4 +90,3 @@ impl SessionManager {
         Ok(sessions)
     }
 }
-

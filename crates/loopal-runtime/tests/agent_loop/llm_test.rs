@@ -9,7 +9,7 @@ use super::{make_runner, make_runner_with_mock_provider};
 #[test]
 fn test_prepare_chat_params_act_mode() {
     let (runner, _rx) = make_runner();
-    let params = runner.prepare_chat_params().expect("should succeed");
+    let params = runner.prepare_chat_params_with(&runner.params.messages).expect("should succeed");
 
     assert_eq!(params.model, "claude-sonnet-4-20250514");
     assert!(params.system_prompt.contains("You are a helpful assistant."));
@@ -23,7 +23,7 @@ fn test_prepare_chat_params_act_mode() {
 fn test_prepare_chat_params_plan_mode_has_suffix() {
     let (mut runner, _rx) = make_runner();
     runner.params.mode = AgentMode::Plan;
-    let params = runner.prepare_chat_params().expect("should succeed");
+    let params = runner.prepare_chat_params_with(&runner.params.messages).expect("should succeed");
 
     assert!(
         params.system_prompt.contains("PLAN mode"),
@@ -43,7 +43,7 @@ fn test_prepare_chat_params_with_messages() {
         .messages
         .push(Message::assistant("Hi there!"));
 
-    let params = runner.prepare_chat_params().expect("should succeed");
+    let params = runner.prepare_chat_params_with(&runner.params.messages).expect("should succeed");
     assert_eq!(params.messages.len(), 2);
     assert_eq!(params.messages[0].role, MessageRole::User);
     assert_eq!(params.messages[1].role, MessageRole::Assistant);
@@ -59,7 +59,8 @@ async fn test_stream_llm_text_response() {
     ];
     let (mut runner, mut event_rx, _input_tx, _ctrl_tx) = make_runner_with_mock_provider(chunks);
 
-    let (text, tool_uses, stream_error, _stop_reason) = runner.stream_llm().await.unwrap();
+    let msgs = runner.params.messages.clone();
+    let (text, tool_uses, stream_error, _stop_reason) = runner.stream_llm_with(&msgs).await.unwrap();
     assert_eq!(text, "Hello world!");
     assert!(tool_uses.is_empty());
     assert!(!stream_error);
@@ -88,7 +89,8 @@ async fn test_stream_llm_tool_use_response() {
     ];
     let (mut runner, _event_rx, _input_tx, _ctrl_tx) = make_runner_with_mock_provider(chunks);
 
-    let (text, tool_uses, stream_error, _stop_reason) = runner.stream_llm().await.unwrap();
+    let msgs = runner.params.messages.clone();
+    let (text, tool_uses, stream_error, _stop_reason) = runner.stream_llm_with(&msgs).await.unwrap();
     assert_eq!(text, "Let me read.");
     assert_eq!(tool_uses.len(), 1);
     assert_eq!(tool_uses[0].0, "tc-1");
@@ -104,7 +106,8 @@ async fn test_stream_llm_error_in_stream() {
     ];
     let (mut runner, _event_rx, _input_tx, _ctrl_tx) = make_runner_with_mock_provider(chunks);
 
-    let (text, tool_uses, stream_error, _stop_reason) = runner.stream_llm().await.unwrap();
+    let msgs = runner.params.messages.clone();
+    let (text, tool_uses, stream_error, _stop_reason) = runner.stream_llm_with(&msgs).await.unwrap();
     assert_eq!(text, "partial");
     assert!(tool_uses.is_empty());
     assert!(stream_error);
@@ -116,7 +119,8 @@ async fn test_stream_llm_empty_stream() {
     let chunks = vec![];
     let (mut runner, _event_rx, _input_tx, _ctrl_tx) = make_runner_with_mock_provider(chunks);
 
-    let (text, tool_uses, stream_error, _stop_reason) = runner.stream_llm().await.unwrap();
+    let msgs = runner.params.messages.clone();
+    let (text, tool_uses, stream_error, _stop_reason) = runner.stream_llm_with(&msgs).await.unwrap();
     assert!(text.is_empty());
     assert!(tool_uses.is_empty());
     assert!(!stream_error);
