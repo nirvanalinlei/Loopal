@@ -1,4 +1,4 @@
-use loopal_config::load_settings;
+use loopal_config::load_config;
 use tempfile::TempDir;
 
 #[test]
@@ -23,7 +23,7 @@ fn test_load_settings_openai_compat_config() {
     )
     .unwrap();
 
-    let settings = load_settings(tmp.path()).unwrap();
+    let settings = load_config(tmp.path()).unwrap().settings;
     assert_eq!(settings.providers.openai_compat.len(), 1);
     assert_eq!(settings.providers.openai_compat[0].name, "ollama");
     assert_eq!(
@@ -68,7 +68,7 @@ fn test_load_settings_local_overrides_project_deep_nested() {
     )
     .unwrap();
 
-    let settings = load_settings(tmp.path()).unwrap();
+    let settings = load_config(tmp.path()).unwrap().settings;
     assert_eq!(settings.max_turns, 75, "local should override max_turns");
 
     let openai = settings.providers.openai.as_ref().unwrap();
@@ -100,24 +100,24 @@ fn test_load_settings_mcp_servers_config() {
     std::fs::write(
         config_dir.join("settings.json"),
         r#"{
-            "mcp_servers": [
-                {
-                    "name": "test-mcp",
+            "mcp_servers": {
+                "test-mcp": {
                     "command": "node",
                     "args": ["server.js"],
                     "env": {"PORT": "3000"}
                 }
-            ]
+            }
         }"#,
     )
     .unwrap();
 
-    let settings = load_settings(tmp.path()).unwrap();
+    let settings = load_config(tmp.path()).unwrap().settings;
     assert_eq!(settings.mcp_servers.len(), 1);
-    assert_eq!(settings.mcp_servers[0].name, "test-mcp");
-    assert_eq!(settings.mcp_servers[0].command, "node");
-    assert_eq!(settings.mcp_servers[0].args, vec!["server.js"]);
-    assert_eq!(settings.mcp_servers[0].env.get("PORT").unwrap(), "3000");
+    let mcp = settings.mcp_servers.get("test-mcp").unwrap();
+    assert_eq!(mcp.command, "node");
+    assert_eq!(mcp.args, vec!["server.js"]);
+    assert_eq!(mcp.env.get("PORT").unwrap(), "3000");
+    assert!(mcp.enabled);
 }
 
 #[test]
@@ -128,7 +128,7 @@ fn test_load_settings_empty_json_file_uses_defaults() {
 
     std::fs::write(config_dir.join("settings.json"), "{}").unwrap();
 
-    let settings = load_settings(tmp.path()).unwrap();
+    let settings = load_config(tmp.path()).unwrap().settings;
     assert_eq!(settings.max_turns, 50);
     assert_eq!(settings.model, "claude-sonnet-4-20250514");
 }
@@ -142,7 +142,7 @@ fn test_load_settings_invalid_local_json_returns_error() {
     std::fs::write(config_dir.join("settings.json"), r#"{"max_turns": 10}"#).unwrap();
     std::fs::write(config_dir.join("settings.local.json"), "NOT_JSON!!").unwrap();
 
-    let result = load_settings(tmp.path());
+    let result = load_config(tmp.path());
     assert!(result.is_err(), "invalid local JSON should produce an error");
 }
 
@@ -166,7 +166,7 @@ fn test_load_settings_hooks_config() {
     )
     .unwrap();
 
-    let settings = load_settings(tmp.path()).unwrap();
+    let settings = load_config(tmp.path()).unwrap().settings;
     assert_eq!(settings.hooks.len(), 1);
     assert_eq!(settings.hooks[0].command, "echo hook running");
 }

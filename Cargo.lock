@@ -1576,6 +1576,7 @@ version = "0.1.0"
 dependencies = [
  "dirs",
  "filetime",
+ "indexmap",
  "loopal-error",
  "loopal-tool-api",
  "serde",
@@ -1653,6 +1654,7 @@ name = "loopal-mcp"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "indexmap",
  "loopal-config",
  "loopal-error",
  "loopal-tool-api",

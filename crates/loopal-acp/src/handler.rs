@@ -7,7 +7,7 @@ use tokio::sync::{Mutex, mpsc};
 use tokio_util::sync::CancellationToken;
 use tracing::info;
 
-use loopal_config::Settings;
+use loopal_config::ResolvedConfig;
 use loopal_protocol::AgentEvent;
 use loopal_runtime::AgentInput;
 
@@ -26,20 +26,20 @@ pub struct ActiveSession {
 pub struct AcpHandler {
     pub transport: Arc<JsonRpcTransport>,
     pub session: Mutex<Option<ActiveSession>>,
-    pub settings: Settings,
+    pub config: ResolvedConfig,
     pub cwd: std::path::PathBuf,
 }
 
 impl AcpHandler {
     pub fn new(
         transport: Arc<JsonRpcTransport>,
-        settings: Settings,
+        config: ResolvedConfig,
         cwd: std::path::PathBuf,
     ) -> Self {
         Self {
             transport,
             session: Mutex::new(None),
-            settings,
+            config,
             cwd,
         }
     }

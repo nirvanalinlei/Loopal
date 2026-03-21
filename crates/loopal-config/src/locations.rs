@@ -7,6 +7,7 @@ const PROJECT_DIR_NAME: &str = ".loopal";
 const SETTINGS_FILE: &str = "settings.json";
 const LOCAL_SETTINGS_FILE: &str = "settings.local.json";
 const INSTRUCTIONS_FILE: &str = "LOOPAL.md";
+const LOCAL_INSTRUCTIONS_FILE: &str = "LOOPAL.local.md";
 
 /// Returns the global config directory: ~/.loopal/
 pub fn global_config_dir() -> Result<PathBuf, ConfigError> {
@@ -40,9 +41,19 @@ pub fn global_instructions_path() -> Result<PathBuf, ConfigError> {
     Ok(global_config_dir()?.join(INSTRUCTIONS_FILE))
 }
 
+/// Returns the path to the global local instructions: ~/.loopal/LOOPAL.local.md
+pub fn global_local_instructions_path() -> Result<PathBuf, ConfigError> {
+    Ok(global_config_dir()?.join(LOCAL_INSTRUCTIONS_FILE))
+}
+
 /// Returns the path to the project instructions file: <cwd>/LOOPAL.md
 pub fn project_instructions_path(cwd: &Path) -> PathBuf {
     cwd.join(INSTRUCTIONS_FILE)
+}
+
+/// Returns the path to the project local instructions: <cwd>/.loopal/LOOPAL.local.md
+pub fn project_local_instructions_path(cwd: &Path) -> PathBuf {
+    project_config_dir(cwd).join(LOCAL_INSTRUCTIONS_FILE)
 }
 
 /// Returns the global skills directory: ~/.loopal/skills/
@@ -53,6 +64,11 @@ pub fn global_skills_dir() -> Result<PathBuf, ConfigError> {
 /// Returns the project skills directory: <cwd>/.loopal/skills/
 pub fn project_skills_dir(cwd: &Path) -> PathBuf {
     project_config_dir(cwd).join("skills")
+}
+
+/// Returns the global plugins directory: ~/.loopal/plugins/
+pub fn global_plugins_dir() -> Result<PathBuf, ConfigError> {
+    Ok(global_config_dir()?.join("plugins"))
 }
 
 // === Volatile directories (under temp_dir, infallible) ===

@@ -7,7 +7,7 @@ use loopal_agent::registry::AgentRegistry;
 use loopal_agent::router::MessageRouter;
 use loopal_agent::shared::AgentShared;
 use loopal_agent::task_store::TaskStore;
-use loopal_config::{load_instructions, load_settings, load_skills};
+use loopal_config::load_config;
 use loopal_context::ContextPipeline;
 use loopal_context::middleware::{ContextGuard, MessageSizeGuard, SmartCompact};
 use loopal_context::system_prompt::build_system_prompt;
@@ -32,24 +32,24 @@ pub async fn run() -> anyhow::Result<()> {
     // Ensure directories exist and clean up expired volatile files
     loopal_config::housekeeping::startup_cleanup();
 
-    let mut settings = load_settings(&cwd)?;
-    apply_cli_overrides(&cli, &mut settings);
+    let mut config = load_config(&cwd)?;
+    apply_cli_overrides(&cli, &mut config.settings);
 
     // ACP mode — replace TUI with JSON-RPC server
     if cli.acp {
-        return loopal_acp::run_acp(settings, cwd).await;
+        return loopal_acp::run_acp(config, cwd).await;
     }
 
-    let model = settings.model.clone();
-    let max_turns = settings.max_turns;
-    let permission_mode = settings.permission_mode;
+    let model = config.settings.model.clone();
+    let max_turns = config.settings.max_turns;
+    let permission_mode = config.settings.permission_mode;
     let mode = if cli.plan { AgentMode::Plan } else { AgentMode::Act };
     let mode_str = if cli.plan { "plan" } else { "act" }.to_string();
 
     tracing::info!(model = %model, mode = %mode_str, "starting");
 
     // Build kernel — register agent tools before wrapping in Arc
-    let mut kernel = Kernel::new(settings)?;
+    let mut kernel = Kernel::new(config.settings)?;
     kernel.start_mcp().await?;
     kernel.init_sandbox(&cwd);
     loopal_agent::tools::register_all(&mut kernel);
@@ -115,14 +115,13 @@ pub async fn run() -> anyhow::Result<()> {
     });
     let shared_any: Arc<dyn std::any::Any + Send + Sync> = Arc::new(agent_shared);
 
-    // Load skills and build system prompt
-    let skills = load_skills(&cwd);
+    // Build system prompt from resolved config
+    let skills: Vec<_> = config.skills.into_values().map(|e| e.skill).collect();
     let skills_summary = format_skills_summary(&skills);
     let commands = merge_commands(&skills);
-    let instructions = load_instructions(&cwd)?;
     let tool_defs = kernel.tool_definitions();
     let system_prompt = build_system_prompt(
-        &instructions, &tool_defs, "", &cwd.to_string_lossy(), &skills_summary,
+        &config.instructions, &tool_defs, "", &cwd.to_string_lossy(), &skills_summary,
     );
 
     let session_ctrl = SessionController::new(

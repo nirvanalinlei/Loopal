@@ -18,7 +18,7 @@ use std::sync::Arc;
 use tokio::io::BufReader;
 use tracing::info;
 
-use loopal_config::Settings;
+use loopal_config::ResolvedConfig;
 
 use crate::handler::AcpHandler;
 use crate::jsonrpc::{IncomingMessage, JsonRpcTransport, read_message};
@@ -27,11 +27,11 @@ use crate::jsonrpc::{IncomingMessage, JsonRpcTransport, read_message};
 ///
 /// This is the main entry point when `--acp` is passed. It replaces the TUI
 /// entirely — all interaction happens through the ACP protocol.
-pub async fn run_acp(settings: Settings, cwd: PathBuf) -> anyhow::Result<()> {
+pub async fn run_acp(config: ResolvedConfig, cwd: PathBuf) -> anyhow::Result<()> {
     info!("starting ACP server");
 
     let transport = Arc::new(JsonRpcTransport::new());
-    let handler = Arc::new(AcpHandler::new(transport.clone(), settings, cwd));
+    let handler = Arc::new(AcpHandler::new(transport.clone(), config, cwd));
     let mut reader = BufReader::new(tokio::io::stdin());
 
     loop {

@@ -2,7 +2,7 @@ use std::fs;
 use std::path::Path;
 use std::time::{Duration, SystemTime};
 
-use crate::locations::{logs_dir, sessions_dir, tmp_dir};
+use crate::locations::{global_plugins_dir, logs_dir, sessions_dir, tmp_dir};
 
 /// Ensure volatile and persistent directories exist, then clean up expired files.
 /// Called once at process startup; errors are silently ignored (best-effort).
@@ -13,6 +13,9 @@ pub fn startup_cleanup() {
     }
     // Ensure persistent directories exist
     if let Ok(d) = sessions_dir() {
+        let _ = fs::create_dir_all(&d);
+    }
+    if let Ok(d) = global_plugins_dir() {
         let _ = fs::create_dir_all(&d);
     }
     // Clean up expired files

@@ -86,7 +86,11 @@ impl App {
 
     /// Reload skills from disk and rebuild the merged command list.
     pub fn refresh_commands(&mut self) {
-        let skills = loopal_config::load_skills(&self.cwd);
+        let config = loopal_config::load_config(&self.cwd);
+        let skills: Vec<_> = match config {
+            Ok(c) => c.skills.into_values().map(|e| e.skill).collect(),
+            Err(_) => Vec::new(),
+        };
         self.commands = merge_commands(&skills);
     }
 }

@@ -1,10 +1,13 @@
+use std::collections::HashMap;
+
+use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 
 use crate::hook::HookConfig;
 use crate::sandbox::SandboxConfig;
 use loopal_tool_api::PermissionMode;
 
-/// Application settings (merged from 5 layers)
+/// Application settings (merged from multiple layers)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Settings {
@@ -31,9 +34,9 @@ pub struct Settings {
     #[serde(default)]
     pub hooks: Vec<HookConfig>,
 
-    /// MCP server configurations
+    /// MCP server configurations (name → config)
     #[serde(default)]
-    pub mcp_servers: Vec<McpServerConfig>,
+    pub mcp_servers: IndexMap<String, McpServerConfig>,
 
     /// Sandbox configuration
     #[serde(default)]
@@ -50,7 +53,7 @@ impl Default for Settings {
             max_cost: None,
             providers: ProvidersConfig::default(),
             hooks: Vec::new(),
-            mcp_servers: Vec::new(),
+            mcp_servers: IndexMap::new(),
             sandbox: SandboxConfig::default(),
         }
     }
@@ -89,10 +92,9 @@ pub struct OpenAiCompatConfig {
     pub model_prefix: Option<String>,
 }
 
+/// MCP server configuration (name is the key in the outer map)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct McpServerConfig {
-    /// Server name
-    pub name: String,
     /// Command to start the server
     pub command: String,
     /// Command arguments
@@ -100,5 +102,19 @@ pub struct McpServerConfig {
     pub args: Vec<String>,
     /// Environment variables
     #[serde(default)]
-    pub env: std::collections::HashMap<String, String>,
+    pub env: HashMap<String, String>,
+    /// Whether this server is enabled (use false to disable an inherited server)
+    #[serde(default = "default_true")]
+    pub enabled: bool,
+    /// Connection timeout in milliseconds
+    #[serde(default = "default_mcp_timeout")]
+    pub timeout_ms: u64,
+}
+
+fn default_true() -> bool {
+    true
+}
+
+fn default_mcp_timeout() -> u64 {
+    30_000
 }

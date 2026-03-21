@@ -1,3 +1,4 @@
+use indexmap::IndexMap;
 use loopal_mcp::McpManager;
 use loopal_error::McpError;
 
@@ -105,7 +106,7 @@ fn test_start_all_empty_configs_succeeds() {
     rt.block_on(async {
         let mut manager = McpManager::new();
         // Starting with no configs should succeed (no-op)
-        let result = manager.start_all(&[]).await;
+        let result = manager.start_all(&IndexMap::new()).await;
         assert!(result.is_ok(), "start_all with empty configs should succeed");
     });
 }

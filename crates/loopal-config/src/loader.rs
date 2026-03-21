@@ -1,9 +1,15 @@
 use std::path::Path;
 
-use crate::settings::Settings;
+use indexmap::IndexMap;
+
+use crate::layer::{ConfigLayer, LayerSource};
+use crate::settings::McpServerConfig;
+use crate::skills::scan_skills_dir;
 use loopal_error::{ConfigError, LoopalError};
 
-use crate::locations;
+// ---------------------------------------------------------------------------
+// Low-level helpers (public for unit tests)
+// ---------------------------------------------------------------------------
 
 /// Deep-merge two JSON values. Objects are merged recursively; all other types
 /// (including arrays) are replaced by the overlay value.
@@ -35,7 +41,6 @@ pub fn load_json_file(path: &Path) -> Result<serde_json::Value, LoopalError> {
 
 /// Apply environment variable overrides to a JSON value.
 pub fn apply_env_overrides(value: &mut serde_json::Value) {
-    // Ensure we have an object to work with
     if !value.is_object() {
         *value = serde_json::json!({});
     }
@@ -45,9 +50,10 @@ pub fn apply_env_overrides(value: &mut serde_json::Value) {
     }
 
     if let Ok(max_turns) = std::env::var("LOOPAL_MAX_TURNS")
-        && let Ok(n) = max_turns.parse::<u32>() {
-            value["max_turns"] = serde_json::json!(n);
-        }
+        && let Ok(n) = max_turns.parse::<u32>()
+    {
+        value["max_turns"] = serde_json::json!(n);
+    }
 
     if let Ok(mode) = std::env::var("LOOPAL_PERMISSION_MODE") {
         value["permission_mode"] = serde_json::Value::String(mode);
@@ -58,61 +64,88 @@ pub fn apply_env_overrides(value: &mut serde_json::Value) {
     }
 }
 
-/// Load settings with 5-layer merge:
-/// 1. Defaults (from Settings::default())
-/// 2. Global settings.json
-/// 3. Project settings.json
-/// 4. Project settings.local.json
-/// 5. Environment variable overrides
-pub fn load_settings(cwd: &Path) -> Result<Settings, LoopalError> {
-    // Start with defaults serialized to Value
-    let mut merged = serde_json::to_value(Settings::default())
-        .map_err(|e| ConfigError::Parse(e.to_string()))?;
+// ---------------------------------------------------------------------------
+// Helpers: extract typed fields from settings JSON
+// ---------------------------------------------------------------------------
 
-    // Layer 2: global settings
-    let global = load_json_file(&locations::global_settings_path()?)?;
-    if !global.is_null() {
-        deep_merge(&mut merged, global);
+/// Extract `mcp_servers` and `hooks` from a settings JSON value into typed
+/// fields, removing them from the raw value to avoid double-counting.
+pub(crate) fn extract_typed_fields(
+    value: &mut serde_json::Value,
+) -> (IndexMap<String, McpServerConfig>, Vec<crate::hook::HookConfig>) {
+    let mut mcp = IndexMap::new();
+    let mut hooks = Vec::new();
+
+    if let Some(mcp_val) = value.get("mcp_servers") {
+        match serde_json::from_value::<IndexMap<String, McpServerConfig>>(mcp_val.clone()) {
+            Ok(map) => mcp = map,
+            Err(e) => tracing::warn!("invalid mcp_servers config, skipping: {e}"),
+        }
     }
 
-    // Layer 3: project settings
-    let project = load_json_file(&locations::project_settings_path(cwd))?;
-    if !project.is_null() {
-        deep_merge(&mut merged, project);
+    if let Some(hooks_val) = value.get("hooks") {
+        match serde_json::from_value(hooks_val.clone()) {
+            Ok(h) => hooks = h,
+            Err(e) => tracing::warn!("invalid hooks config, skipping: {e}"),
+        }
     }
 
-    // Layer 4: project local settings
-    let local = load_json_file(&locations::project_local_settings_path(cwd))?;
-    if !local.is_null() {
-        deep_merge(&mut merged, local);
+    if let Some(obj) = value.as_object_mut() {
+        obj.remove("mcp_servers");
+        obj.remove("hooks");
     }
 
-    // Layer 5: environment overrides
-    apply_env_overrides(&mut merged);
-
-    // Warn about unrecognised keys before deserialising
-    crate::validate::warn_unknown_keys(&merged);
-
-    let settings: Settings = serde_json::from_value(merged)
-        .map_err(|e| ConfigError::Parse(e.to_string()))?;
-
-    Ok(settings)
+    (mcp, hooks)
 }
 
-/// Load and concatenate instruction files (LOOPAL.md).
-/// Global instructions come first, then project instructions, separated by newlines.
-pub fn load_instructions(cwd: &Path) -> Result<String, LoopalError> {
-    let mut parts = Vec::new();
+/// Read optional text from a file path if it exists.
+pub(crate) fn read_optional_text(path: &Path) -> Option<String> {
+    if path.exists() {
+        std::fs::read_to_string(path).ok()
+    } else {
+        None
+    }
+}
 
-    let global_path = locations::global_instructions_path()?;
-    if global_path.exists() {
-        parts.push(std::fs::read_to_string(&global_path)?);
+// ---------------------------------------------------------------------------
+// Isomorphic directory loader
+// ---------------------------------------------------------------------------
+
+/// Load a `ConfigLayer` from a directory following the isomorphic convention:
+///
+/// ```text
+/// <dir>/
+/// ├── settings.json     # settings + mcp_servers + hooks
+/// ├── skills/           # skill markdown files
+/// └── LOOPAL.md         # instruction text
+/// ```
+///
+/// Missing files/directories are silently ignored.
+pub fn load_layer_from_dir(
+    dir: &Path,
+    source: LayerSource,
+    instructions_path: Option<&Path>,
+) -> Result<ConfigLayer, LoopalError> {
+    let mut layer = ConfigLayer { source, ..Default::default() };
+
+    // settings.json — extract mcp_servers and hooks before storing raw JSON
+    let mut settings_value = load_json_file(&dir.join("settings.json"))?;
+
+    if !settings_value.is_null() {
+        let (mcp, hooks) = extract_typed_fields(&mut settings_value);
+        layer.mcp_servers = mcp;
+        layer.hooks = hooks;
+        layer.settings = settings_value;
     }
 
-    let project_path = locations::project_instructions_path(cwd);
-    if project_path.exists() {
-        parts.push(std::fs::read_to_string(&project_path)?);
-    }
+    // skills/ directory
+    layer.skills = scan_skills_dir(&dir.join("skills"));
 
-    Ok(parts.join("\n\n"))
+    // Instructions: use explicit path if given, otherwise <dir>/LOOPAL.md
+    let instr_path = instructions_path
+        .map(|p| p.to_path_buf())
+        .unwrap_or_else(|| dir.join("LOOPAL.md"));
+    layer.instructions = read_optional_text(&instr_path);
+
+    Ok(layer)
 }

@@ -61,7 +61,6 @@ fn test_settings_serde_roundtrip() {
 fn test_settings_serde_from_empty_json() {
     let json = "{}";
     let settings: Settings = serde_json::from_str(json).unwrap();
-    // Should produce defaults
     assert_eq!(settings.model, "claude-sonnet-4-20250514");
     assert_eq!(settings.max_turns, 50);
 }
@@ -72,7 +71,6 @@ fn test_settings_serde_partial_override() {
     let settings: Settings = serde_json::from_str(json).unwrap();
     assert_eq!(settings.model, "gpt-4");
     assert_eq!(settings.max_turns, 100);
-    // Remaining fields should be defaults
     assert_eq!(settings.permission_mode, PermissionMode::Bypass);
     assert_eq!(settings.max_context_tokens, 200_000);
 }
@@ -95,4 +93,21 @@ fn test_providers_config_serde_roundtrip() {
     assert!(deserialized.openai.is_none());
     assert!(deserialized.google.is_none());
     assert!(deserialized.openai_compat.is_empty());
+}
+
+#[test]
+fn test_mcp_server_config_map_format() {
+    let json = r#"{
+        "mcp_servers": {
+            "github": {"command": "mcp-server-github", "args": ["--token", "abc"]},
+            "sqlite": {"command": "mcp-sqlite", "enabled": false}
+        }
+    }"#;
+    let settings: Settings = serde_json::from_str(json).unwrap();
+    assert_eq!(settings.mcp_servers.len(), 2);
+    let github = settings.mcp_servers.get("github").unwrap();
+    assert_eq!(github.command, "mcp-server-github");
+    assert!(github.enabled);
+    let sqlite = settings.mcp_servers.get("sqlite").unwrap();
+    assert!(!sqlite.enabled);
 }

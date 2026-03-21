@@ -11,7 +11,6 @@ use loopal_agent::registry::AgentRegistry;
 use loopal_agent::router::MessageRouter;
 use loopal_agent::shared::AgentShared;
 use loopal_agent::task_store::TaskStore;
-use loopal_config::{load_instructions, load_skills};
 use loopal_context::ContextPipeline;
 use loopal_context::middleware::{ContextGuard, MessageSizeGuard, SmartCompact};
 use loopal_context::system_prompt::build_system_prompt;
@@ -36,8 +35,8 @@ impl AcpHandler {
 
         let cwd = if params.cwd.is_absolute() { params.cwd } else { self.cwd.clone() };
 
-        // Bootstrap kernel
-        let mut kernel = match Kernel::new(self.settings.clone()) {
+        // Bootstrap kernel using resolved config
+        let mut kernel = match Kernel::new(self.config.settings.clone()) {
             Ok(k) => k,
             Err(e) => {
                 self.transport.respond_error(
@@ -63,7 +62,8 @@ impl AcpHandler {
                 return;
             }
         };
-        let session = match session_manager.create_session(&cwd, &self.settings.model) {
+        let model = &self.config.settings.model;
+        let session = match session_manager.create_session(&cwd, model) {
             Ok(s) => s,
             Err(e) => {
                 self.transport.respond_error(
@@ -88,7 +88,7 @@ impl AcpHandler {
             cancel_token.clone(),
         ));
 
-        // Build system prompt + context pipeline
+        // Build system prompt + context pipeline from resolved config
         let (system_prompt, context_pipeline, shared) =
             self.build_agent_context(&kernel, &session_id, &cwd, event_tx.clone());
 
@@ -96,11 +96,11 @@ impl AcpHandler {
             kernel: kernel.clone(),
             session,
             messages: Vec::new(),
-            model: self.settings.model.clone(),
+            model: model.clone(),
             system_prompt,
             mode: AgentMode::Act,
-            permission_mode: self.settings.permission_mode,
-            max_turns: self.settings.max_turns,
+            permission_mode: self.config.settings.permission_mode,
+            max_turns: self.config.settings.max_turns,
             frontend,
             session_manager,
             context_pipeline,
@@ -136,12 +136,14 @@ impl AcpHandler {
         cwd: &std::path::Path,
         event_tx: mpsc::Sender<loopal_protocol::AgentEvent>,
     ) -> (String, ContextPipeline, Arc<dyn std::any::Any + Send + Sync>) {
-        let skills = load_skills(cwd);
+        let skills: Vec<_> = self.config.skills.values()
+            .map(|e| &e.skill)
+            .collect();
         let skills_summary = format_skills_summary(&skills);
-        let instructions = load_instructions(cwd).unwrap_or_default();
         let tool_defs = kernel.tool_definitions();
         let system_prompt = build_system_prompt(
-            &instructions, &tool_defs, "", &cwd.to_string_lossy(), &skills_summary,
+            &self.config.instructions, &tool_defs, "",
+            &cwd.to_string_lossy(), &skills_summary,
         );
 
         let mut pipeline = ContextPipeline::new();
@@ -171,7 +173,7 @@ impl AcpHandler {
     }
 }
 
-fn format_skills_summary(skills: &[loopal_config::Skill]) -> String {
+fn format_skills_summary(skills: &[&loopal_config::Skill]) -> String {
     if skills.is_empty() { return String::new(); }
     let mut s = String::from("# Available Skills\nUser can invoke these via /name:\n");
     for skill in skills {

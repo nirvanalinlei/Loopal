@@ -13,6 +13,12 @@ mod loader_settings_test;
 mod loader_unit_test;
 #[path = "suite/locations_test.rs"]
 mod locations_test;
+#[path = "suite/plugin_test.rs"]
+mod plugin_test;
+#[path = "suite/resolver_edge_test.rs"]
+mod resolver_edge_test;
+#[path = "suite/resolver_test.rs"]
+mod resolver_test;
 #[path = "suite/skills_loader_test.rs"]
 mod skills_loader_test;
 #[path = "suite/skills_parser_test.rs"]

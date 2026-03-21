@@ -1,4 +1,4 @@
-use loopal_config::load_settings;
+use loopal_config::load_config;
 use tempfile::TempDir;
 
 #[test]
@@ -14,7 +14,7 @@ fn test_load_settings_all_env_var_scenarios() {
     // --- Scenario 1: Defaults (no config files, no env vars) ---
     {
         let tmp = TempDir::new().unwrap();
-        let settings = load_settings(tmp.path()).unwrap();
+        let settings = load_config(tmp.path()).unwrap().settings;
         assert_eq!(settings.max_turns, 50);
         assert_eq!(settings.model, "claude-sonnet-4-20250514");
         assert!(!settings.model.is_empty());
@@ -32,7 +32,7 @@ fn test_load_settings_all_env_var_scenarios() {
         )
         .unwrap();
 
-        let settings = load_settings(tmp.path()).unwrap();
+        let settings = load_config(tmp.path()).unwrap().settings;
         assert_eq!(settings.max_turns, 100);
         assert_eq!(settings.model, "gpt-4");
     }
@@ -45,7 +45,7 @@ fn test_load_settings_all_env_var_scenarios() {
         }
 
         let tmp = TempDir::new().unwrap();
-        let settings = load_settings(tmp.path()).unwrap();
+        let settings = load_config(tmp.path()).unwrap().settings;
         assert_eq!(settings.model, "test-model");
         assert_eq!(settings.max_turns, 10);
 
@@ -73,7 +73,7 @@ fn test_load_settings_all_env_var_scenarios() {
         )
         .unwrap();
 
-        let settings = load_settings(tmp.path()).unwrap();
+        let settings = load_config(tmp.path()).unwrap().settings;
         assert_eq!(settings.max_turns, 200, "local should override project");
         assert_eq!(settings.model, "gpt-4", "model from project should persist");
     }
@@ -85,7 +85,7 @@ fn test_load_settings_all_env_var_scenarios() {
         }
 
         let tmp = TempDir::new().unwrap();
-        let settings = load_settings(tmp.path()).unwrap();
+        let settings = load_config(tmp.path()).unwrap().settings;
         assert_eq!(
             settings.permission_mode,
             loopal_tool_api::PermissionMode::Supervised,
@@ -104,11 +104,30 @@ fn test_load_settings_all_env_var_scenarios() {
         }
 
         let tmp = TempDir::new().unwrap();
-        let settings = load_settings(tmp.path()).unwrap();
+        let settings = load_config(tmp.path()).unwrap().settings;
         assert_eq!(settings.max_turns, 50, "non-numeric max_turns should be ignored");
 
         unsafe {
             std::env::remove_var("LOOPAL_MAX_TURNS");
+        }
+    }
+
+    // --- Scenario 7: LOOPAL_SANDBOX override ---
+    {
+        unsafe {
+            std::env::set_var("LOOPAL_SANDBOX", "read_only");
+        }
+
+        let tmp = TempDir::new().unwrap();
+        let settings = load_config(tmp.path()).unwrap().settings;
+        assert_eq!(
+            settings.sandbox.policy,
+            loopal_config::SandboxPolicy::ReadOnly,
+            "env var should override sandbox policy"
+        );
+
+        unsafe {
+            std::env::remove_var("LOOPAL_SANDBOX");
         }
     }
 }
@@ -144,7 +163,7 @@ fn test_load_settings_deep_merge_nested_objects() {
     )
     .unwrap();
 
-    let settings = load_settings(tmp.path()).unwrap();
+    let settings = load_config(tmp.path()).unwrap().settings;
     let anthropic = settings.providers.anthropic.as_ref().unwrap();
     assert_eq!(
         anthropic.api_key.as_deref(),
@@ -163,20 +182,11 @@ fn test_load_settings_invalid_json_returns_error() {
     let tmp = TempDir::new().unwrap();
     let config_dir = tmp.path().join(".loopal");
     std::fs::create_dir_all(&config_dir).unwrap();
+    std::fs::write(config_dir.join("settings.json"), "{ invalid json }}").unwrap();
 
-    std::fs::write(
-        config_dir.join("settings.json"),
-        "{ this is not valid json }}}",
-    )
-    .unwrap();
-
-    let result = load_settings(tmp.path());
+    let result = load_config(tmp.path());
     assert!(result.is_err(), "invalid JSON should produce an error");
-    let err_msg = result.unwrap_err().to_string();
-    assert!(
-        err_msg.contains("Parse") || err_msg.contains("parse") || err_msg.contains("settings.json"),
-        "error should mention parsing, got: {}",
-        err_msg
-    );
+    let err = result.unwrap_err().to_string();
+    assert!(err.contains("Parse") || err.contains("parse") || err.contains("settings.json"));
 }
 

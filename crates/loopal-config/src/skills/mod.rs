@@ -5,23 +5,12 @@ pub use parser::{Skill, parse_skill};
 use std::collections::HashMap;
 use std::path::Path;
 
-use crate::locations::{global_skills_dir, project_skills_dir};
-
-/// Load all skills from global and project directories.
+/// Scan a single directory for `.md` skill files and return them sorted.
 ///
-/// Project skills override global skills with the same name.
-pub fn load_skills(cwd: &Path) -> Vec<Skill> {
+/// Used by the isomorphic layer loader to collect skills from any directory.
+pub fn scan_skills_dir(dir: &Path) -> Vec<Skill> {
     let mut map = HashMap::new();
-
-    // Global skills (lower priority)
-    if let Ok(dir) = global_skills_dir() {
-        load_skills_from_dir(&dir, &mut map);
-    }
-
-    // Project skills (higher priority, overrides global)
-    let project_dir = project_skills_dir(cwd);
-    load_skills_from_dir(&project_dir, &mut map);
-
+    load_skills_from_dir(dir, &mut map);
     let mut skills: Vec<Skill> = map.into_values().collect();
     skills.sort_by(|a, b| a.name.cmp(&b.name));
     skills
