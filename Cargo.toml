@@ -16,7 +16,24 @@ members = [
     "crates/loopal-config",
     "crates/loopal-storage",
     "crates/loopal-provider",
-    "crates/loopal-tools",
+    "crates/tools/edit-core",
+    "crates/tools/read",
+    "crates/tools/write",
+    "crates/tools/edit",
+    "crates/tools/multi-edit",
+    "crates/tools/apply-patch",
+    "crates/tools/diff",
+    "crates/tools/grep",
+    "crates/tools/glob",
+    "crates/tools/ls",
+    "crates/tools/file-ops",
+    "crates/tools/bash",
+    "crates/tools/background",
+    "crates/tools/fetch",
+    "crates/tools/web-search",
+    "crates/tools/ask-user",
+    "crates/tools/plan-mode",
+    "crates/tools/registry",
     "crates/loopal-mcp",
     "crates/loopal-hooks",
     "crates/loopal-context",
@@ -96,7 +113,24 @@ loopal-provider-api = { path = "crates/loopal-provider-api" }
 loopal-config = { path = "crates/loopal-config" }
 loopal-storage = { path = "crates/loopal-storage" }
 loopal-provider = { path = "crates/loopal-provider" }
-loopal-tools = { path = "crates/loopal-tools" }
+loopal-edit-core = { path = "crates/tools/edit-core" }
+loopal-tool-read = { path = "crates/tools/read" }
+loopal-tool-write = { path = "crates/tools/write" }
+loopal-tool-edit = { path = "crates/tools/edit" }
+loopal-tool-multi-edit = { path = "crates/tools/multi-edit" }
+loopal-tool-apply-patch = { path = "crates/tools/apply-patch" }
+loopal-tool-diff = { path = "crates/tools/diff" }
+loopal-tool-grep = { path = "crates/tools/grep" }
+loopal-tool-glob = { path = "crates/tools/glob" }
+loopal-tool-ls = { path = "crates/tools/ls" }
+loopal-tool-file-ops = { path = "crates/tools/file-ops" }
+loopal-tool-bash = { path = "crates/tools/bash" }
+loopal-tool-background = { path = "crates/tools/background" }
+loopal-tool-fetch = { path = "crates/tools/fetch" }
+loopal-tool-web-search = { path = "crates/tools/web-search" }
+loopal-tool-ask-user = { path = "crates/tools/ask-user" }
+loopal-tool-plan-mode = { path = "crates/tools/plan-mode" }
+loopal-tools = { path = "crates/tools/registry" }
 loopal-mcp = { path = "crates/loopal-mcp" }
 loopal-hooks = { path = "crates/loopal-hooks" }
 loopal-context = { path = "crates/loopal-context" }

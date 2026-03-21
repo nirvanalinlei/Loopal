@@ -1579,6 +1579,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "loopal-edit-core"
+version = "0.1.0"
+dependencies = [
+ "tempfile",
+]
+
+[[package]]
 name = "loopal-error"
 version = "0.1.0"
 dependencies = [
@@ -1770,25 +1777,242 @@ dependencies = [
 ]
 
 [[package]]
-name = "loopal-tools"
+name = "loopal-tool-apply-patch"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "loopal-edit-core",
+ "loopal-error",
+ "loopal-tool-api",
+ "serde_json",
+ "tempfile",
+ "tokio",
+]
+
+[[package]]
+name = "loopal-tool-ask-user"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "loopal-error",
+ "loopal-tool-api",
+ "serde_json",
+ "tempfile",
+ "tokio",
+]
+
+[[package]]
+name = "loopal-tool-background"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "loopal-error",
+ "loopal-tool-api",
+ "loopal-tool-bash",
+ "serde_json",
+ "tempfile",
+ "tokio",
+]
+
+[[package]]
+name = "loopal-tool-bash"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "loopal-error",
+ "loopal-tool-api",
+ "loopal-tool-background",
+ "serde_json",
+ "tempfile",
+ "tokio",
+]
+
+[[package]]
+name = "loopal-tool-diff"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "loopal-edit-core",
+ "loopal-error",
+ "loopal-tool-api",
+ "serde_json",
+ "tempfile",
+ "tokio",
+]
+
+[[package]]
+name = "loopal-tool-edit"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "loopal-edit-core",
+ "loopal-error",
+ "loopal-tool-api",
+ "serde_json",
+ "tempfile",
+ "tokio",
+]
+
+[[package]]
+name = "loopal-tool-fetch"
 version = "0.1.0"
 dependencies = [
  "async-trait",
  "futures",
+ "html2text",
+ "loopal-error",
+ "loopal-tool-api",
+ "reqwest",
+ "serde_json",
+ "tempfile",
+ "tokio",
+]
+
+[[package]]
+name = "loopal-tool-file-ops"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "loopal-error",
+ "loopal-tool-api",
+ "serde_json",
+ "tempfile",
+ "tokio",
+]
+
+[[package]]
+name = "loopal-tool-glob"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
  "globset",
+ "loopal-error",
+ "loopal-tool-api",
+ "loopal-tool-grep",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "walkdir",
+]
+
+[[package]]
+name = "loopal-tool-grep"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "globset",
+ "loopal-error",
+ "loopal-tool-api",
+ "regex",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "walkdir",
+]
+
+[[package]]
+name = "loopal-tool-ls"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "loopal-error",
+ "loopal-tool-api",
+ "serde_json",
+ "tempfile",
+ "tokio",
+]
+
+[[package]]
+name = "loopal-tool-multi-edit"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "loopal-edit-core",
+ "loopal-error",
+ "loopal-tool-api",
+ "serde_json",
+ "tempfile",
+ "tokio",
+]
+
+[[package]]
+name = "loopal-tool-plan-mode"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "loopal-error",
+ "loopal-tool-api",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
+name = "loopal-tool-read"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
  "html2text",
  "loopal-error",
  "loopal-tool-api",
  "pdf-extract",
- "regex",
+ "serde_json",
+ "tempfile",
+ "tokio",
+]
+
+[[package]]
+name = "loopal-tool-web-search"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "loopal-error",
+ "loopal-tool-api",
  "reqwest",
  "serde",
  "serde_json",
  "tempfile",
- "thiserror 2.0.18",
  "tokio",
- "tracing",
- "walkdir",
+]
+
+[[package]]
+name = "loopal-tool-write"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "loopal-edit-core",
+ "loopal-error",
+ "loopal-tool-api",
+ "serde_json",
+ "tempfile",
+ "tokio",
+]
+
+[[package]]
+name = "loopal-tools"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "loopal-edit-core",
+ "loopal-error",
+ "loopal-tool-api",
+ "loopal-tool-apply-patch",
+ "loopal-tool-ask-user",
+ "loopal-tool-background",
+ "loopal-tool-bash",
+ "loopal-tool-diff",
+ "loopal-tool-edit",
+ "loopal-tool-fetch",
+ "loopal-tool-file-ops",
+ "loopal-tool-glob",
+ "loopal-tool-grep",
+ "loopal-tool-ls",
+ "loopal-tool-multi-edit",
+ "loopal-tool-plan-mode",
+ "loopal-tool-read",
+ "loopal-tool-web-search",
+ "loopal-tool-write",
+ "serde_json",
+ "tempfile",
 ]
 
 [[package]]

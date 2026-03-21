@@ -1,0 +1,15 @@
+[package]
+name = "loopal-tool-background"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+loopal-error = { workspace = true }
+loopal-tool-api = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+async-trait = { workspace = true }
+
+[dev-dependencies]
+loopal-tool-bash = { workspace = true }
+tempfile = "3"
