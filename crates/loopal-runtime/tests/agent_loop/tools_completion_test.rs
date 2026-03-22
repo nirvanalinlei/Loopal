@@ -6,7 +6,7 @@ use loopal_message::ContentBlock;
 use loopal_tool_api::{PermissionLevel, PermissionMode};
 use loopal_tool_api::{Tool, ToolContext, ToolResult, COMPLETION_PREFIX};
 
-use super::make_runner_with_channels;
+use super::{make_cancel, make_runner_with_channels};
 
 /// Fake tool that returns "{COMPLETION_PREFIX}{input.result}".
 struct FakeCompletionTool;
@@ -43,7 +43,7 @@ async fn test_execute_tools_detects_attempt_completion() {
         serde_json::json!({"result": "task finished successfully"}),
     )];
 
-    let completion = runner.execute_tools(tool_uses).await.unwrap();
+    let completion = runner.execute_tools(tool_uses, &make_cancel()).await.unwrap();
     assert_eq!(completion, Some("task finished successfully".to_string()));
 }
 
@@ -74,7 +74,7 @@ async fn test_execute_tools_completion_mixed_with_normal_tool() {
          serde_json::json!({"result": "all done"})),
     ];
 
-    let completion = runner.execute_tools(tool_uses).await.unwrap();
+    let completion = runner.execute_tools(tool_uses, &make_cancel()).await.unwrap();
     assert_eq!(completion, Some("all done".to_string()));
 
     // Both tool results should be in messages
@@ -100,7 +100,7 @@ async fn test_execute_tools_error_result_not_detected_as_completion() {
         serde_json::json!({}),
     )];
 
-    let completion = runner.execute_tools(tool_uses).await.unwrap();
+    let completion = runner.execute_tools(tool_uses, &make_cancel()).await.unwrap();
     assert!(completion.is_none(), "error results should not trigger completion");
 
     // Verify tool result is error

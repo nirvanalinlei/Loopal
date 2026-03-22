@@ -4,7 +4,7 @@ use loopal_protocol::AgentEventPayload;
 use loopal_message::MessageRole;
 use loopal_provider_api::{StopReason, StreamChunk};
 
-use super::{make_runner, make_runner_with_mock_provider};
+use super::{make_cancel, make_runner, make_runner_with_mock_provider};
 
 #[test]
 fn test_prepare_chat_params_act_mode() {
@@ -60,7 +60,8 @@ async fn test_stream_llm_text_response() {
     let (mut runner, mut event_rx, _input_tx, _ctrl_tx) = make_runner_with_mock_provider(chunks);
 
     let msgs = runner.params.messages.clone();
-    let result = runner.stream_llm_with(&msgs).await.unwrap();
+    let cancel = make_cancel();
+    let result = runner.stream_llm_with(&msgs, &cancel).await.unwrap();
     let text = result.assistant_text;
     let tool_uses = result.tool_uses;
     let stream_error = result.stream_error;
@@ -93,7 +94,8 @@ async fn test_stream_llm_tool_use_response() {
     let (mut runner, _event_rx, _input_tx, _ctrl_tx) = make_runner_with_mock_provider(chunks);
 
     let msgs = runner.params.messages.clone();
-    let result = runner.stream_llm_with(&msgs).await.unwrap();
+    let cancel = make_cancel();
+    let result = runner.stream_llm_with(&msgs, &cancel).await.unwrap();
     let text = result.assistant_text;
     let tool_uses = result.tool_uses;
     let stream_error = result.stream_error;
@@ -113,7 +115,8 @@ async fn test_stream_llm_error_in_stream() {
     let (mut runner, _event_rx, _input_tx, _ctrl_tx) = make_runner_with_mock_provider(chunks);
 
     let msgs = runner.params.messages.clone();
-    let result = runner.stream_llm_with(&msgs).await.unwrap();
+    let cancel = make_cancel();
+    let result = runner.stream_llm_with(&msgs, &cancel).await.unwrap();
     let text = result.assistant_text;
     let tool_uses = result.tool_uses;
     let stream_error = result.stream_error;
@@ -129,7 +132,8 @@ async fn test_stream_llm_empty_stream() {
     let (mut runner, _event_rx, _input_tx, _ctrl_tx) = make_runner_with_mock_provider(chunks);
 
     let msgs = runner.params.messages.clone();
-    let result = runner.stream_llm_with(&msgs).await.unwrap();
+    let cancel = make_cancel();
+    let result = runner.stream_llm_with(&msgs, &cancel).await.unwrap();
     let text = result.assistant_text;
     let tool_uses = result.tool_uses;
     let stream_error = result.stream_error;

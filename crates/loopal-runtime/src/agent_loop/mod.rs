@@ -1,3 +1,4 @@
+pub mod cancel;
 mod input;
 mod llm;
 mod llm_record;
@@ -10,6 +11,7 @@ mod run;
 mod runner;
 pub(crate) mod tool_exec;
 mod tools;
+mod tools_util;
 
 use std::collections::HashSet;
 use std::sync::Arc;

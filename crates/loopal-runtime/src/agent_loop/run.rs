@@ -7,6 +7,7 @@ use loopal_protocol::AgentEventPayload;
 use tracing::{error, info};
 
 use super::WaitResult;
+use super::cancel::TurnCancel;
 use super::runner::AgentLoopRunner;
 
 impl AgentLoopRunner {
@@ -33,7 +34,11 @@ impl AgentLoopRunner {
             }
 
             // Execute one complete turn (LLM → [tools → LLM]* → done)
-            match self.execute_turn().await {
+            let cancel = TurnCancel::new(
+                self.interrupt.clone(),
+                self.interrupt_notify.clone(),
+            );
+            match self.execute_turn(&cancel).await {
                 Ok(turn) => {
                     if !turn.output.is_empty() { last_output.clone_from(&turn.output); }
 

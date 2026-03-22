@@ -7,6 +7,7 @@ use loopal_provider::{get_thinking_capability, resolve_thinking_config};
 use loopal_provider_api::{ChatParams, StreamChunk};
 use tracing::{error, info, warn};
 
+use super::cancel::TurnCancel;
 use super::llm_result::LlmStreamResult;
 use super::runner::AgentLoopRunner;
 
@@ -42,8 +43,9 @@ impl AgentLoopRunner {
     pub async fn stream_llm_with(
         &mut self,
         messages: &[Message],
+        cancel: &TurnCancel,
     ) -> Result<LlmStreamResult> {
-        if self.interrupt.is_signaled() {
+        if cancel.is_cancelled() {
             return Ok(LlmStreamResult { stream_error: true, ..Default::default() });
         }
 
@@ -56,7 +58,7 @@ impl AgentLoopRunner {
             thinking = ?chat_params.thinking, "LLM request"
         );
 
-        let mut stream = self.retry_stream_chat(&chat_params, &*provider).await?;
+        let mut stream = self.retry_stream_chat(&chat_params, &*provider, cancel).await?;
         let mut result = LlmStreamResult::default();
 
         loop {
@@ -68,12 +70,10 @@ impl AgentLoopRunner {
                         break;
                     }
                 }
-                _ = self.interrupt_notify.notified() => {
-                    if self.interrupt.is_signaled() {
-                        info!("interrupt signaled during LLM streaming");
-                        result.stream_error = true;
-                        break;
-                    }
+                _ = cancel.cancelled() => {
+                    info!("cancelled during LLM streaming");
+                    result.stream_error = true;
+                    break;
                 }
             }
         }
@@ -94,6 +94,7 @@ impl AgentLoopRunner {
         &mut self,
         params: &ChatParams,
         provider: &dyn loopal_provider_api::Provider,
+        cancel: &TurnCancel,
     ) -> Result<loopal_provider_api::ChatStream> {
         const MAX_RETRIES: u32 = 6;
         const BASE_WAIT_MS: u64 = 2000;
@@ -112,11 +113,9 @@ impl AgentLoopRunner {
                     // Interruptible sleep via select!
                     tokio::select! {
                         _ = tokio::time::sleep(std::time::Duration::from_millis(wait_ms)) => {}
-                        _ = self.interrupt_notify.notified() => {
-                            if self.interrupt.is_signaled() {
-                                info!("interrupt signaled during retry wait");
-                                return Ok(Box::pin(futures::stream::empty()));
-                            }
+                        _ = cancel.cancelled() => {
+                            info!("cancelled during retry wait");
+                            return Ok(Box::pin(futures::stream::empty()));
                         }
                     }
                 }

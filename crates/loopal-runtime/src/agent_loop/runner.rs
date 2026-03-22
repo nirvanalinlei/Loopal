@@ -7,6 +7,7 @@ use loopal_tool_api::ToolContext;
 use tokio::sync::Notify;
 use tracing::{Instrument, info, info_span, warn};
 
+use super::cancel::TurnCancel;
 use super::{AgentLoopParams, MAX_AUTO_CONTINUATIONS, TurnOutput};
 
 /// Encapsulates the agent loop state and behavior.
@@ -86,13 +87,13 @@ impl AgentLoopRunner {
     /// Each LLM call uses a **working copy** of `params.messages`:
     /// middleware compaction and preflight truncation only affect the copy,
     /// so the persistent history (`params.messages` + storage) is never polluted.
-    pub(super) async fn execute_turn(&mut self) -> Result<TurnOutput> {
+    pub(super) async fn execute_turn(&mut self, cancel: &TurnCancel) -> Result<TurnOutput> {
         let mut last_text = String::new();
         let mut continuation_count: u32 = 0;
         loop {
             // Early exit if interrupted (e.g. tools returned "Interrupted" results
             // and the loop came back — skip the next LLM call).
-            if self.interrupt.is_signaled() {
+            if cancel.is_cancelled() {
                 return Ok(TurnOutput { output: last_text });
             }
 
@@ -102,7 +103,7 @@ impl AgentLoopRunner {
                 return Ok(TurnOutput { output: last_text });
             }
             self.preflight_check_on(&mut working);
-            let result = self.stream_llm_with(&working).await?;
+            let result = self.stream_llm_with(&working, cancel).await?;
 
             // max_tokens + tool calls → tool arguments may be truncated, discard tools
             if result.stop_reason == StopReason::MaxTokens && !result.tool_uses.is_empty() {
@@ -152,7 +153,7 @@ impl AgentLoopRunner {
             }
 
             // Execute tools → results appended to persistent params.messages
-            let completion_result = self.execute_tools(result.tool_uses).await?;
+            let completion_result = self.execute_tools(result.tool_uses, cancel).await?;
             self.apply_pending_cwd_switch();
             self.inject_pending_messages().await;
             continuation_count = 0;

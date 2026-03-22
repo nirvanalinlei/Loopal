@@ -3,7 +3,7 @@ use std::sync::Arc;
 use chrono::Utc;
 use loopal_context::ContextPipeline;
 use loopal_kernel::Kernel;
-use loopal_runtime::agent_loop::AgentLoopRunner;
+use loopal_runtime::agent_loop::{AgentLoopRunner, cancel::TurnCancel};
 use loopal_runtime::frontend::{AutoDenyHandler, AutoCancelQuestionHandler, TuiPermissionHandler};
 use loopal_runtime::{AgentLoopParams, AgentMode, SessionManager, UnifiedFrontend};
 use loopal_storage::Session;
@@ -13,6 +13,11 @@ use loopal_protocol::Envelope;
 use loopal_protocol::AgentEvent;
 use loopal_tool_api::PermissionMode;
 use tokio::sync::mpsc;
+
+/// Create a no-op TurnCancel for tests (never cancelled).
+pub fn make_cancel() -> TurnCancel {
+    TurnCancel::new(Default::default(), Arc::new(tokio::sync::Notify::new()))
+}
 
 mod auto_continue_test;
 mod auto_continue_edge_test;

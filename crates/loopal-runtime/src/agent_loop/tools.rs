@@ -1,7 +1,5 @@
-use std::sync::Arc;
-
 use loopal_error::Result;
-use loopal_protocol::{AgentEventPayload, Question, QuestionOption};
+use loopal_protocol::AgentEventPayload;
 use loopal_message::{ContentBlock, Message, MessageRole};
 use loopal_tool_api::PermissionDecision;
 use tracing::{error, info};
@@ -9,9 +7,11 @@ use tracing::{error, info};
 use loopal_tool_api::COMPLETION_PREFIX;
 
 use crate::mode::AgentMode;
+use super::cancel::TurnCancel;
 use super::input::build_user_message;
 use super::runner::AgentLoopRunner;
 use super::tool_exec::execute_approved_tools;
+use super::tools_util::{parse_questions, format_answers};
 
 impl AgentLoopRunner {
     /// Execute tool calls: intercept → precheck → permission → parallel execution.
@@ -19,10 +19,11 @@ impl AgentLoopRunner {
     pub async fn execute_tools(
         &mut self,
         tool_uses: Vec<(String, String, serde_json::Value)>,
+        cancel: &TurnCancel,
     ) -> Result<Option<String>> {
-        // Check interrupt before starting any tool execution
-        if self.interrupt.is_signaled() {
-            info!("interrupt signaled, skipping tool execution");
+        // Check cancel before starting any tool execution
+        if cancel.is_cancelled() {
+            info!("cancelled, skipping tool execution");
             let mut blocks = Vec::with_capacity(tool_uses.len());
             for (id, name, _) in &tool_uses {
                 self.emit(AgentEventPayload::ToolResult {
@@ -70,8 +71,11 @@ impl AgentLoopRunner {
         // Phase 1: Sandbox precheck then permission checks (remaining tools only)
         let mut approved: Vec<(String, String, serde_json::Value)> = Vec::new();
         let mut denied_results: Vec<(usize, ContentBlock)> = Vec::new();
+        let mut processed = 0usize;
 
         for (id, name, input) in &remaining {
+            if cancel.is_cancelled() { break; }
+            processed += 1;
             let orig_idx = tool_uses.iter().position(|(tid, _, _)| tid == id).unwrap_or(0);
             let precheck_reason = self.params.kernel
                 .get_tool(name)
@@ -106,17 +110,29 @@ impl AgentLoopRunner {
             }
         }
 
+        // Mark unprocessed tools as interrupted (cancelled during permission phase)
+        for (id, name, _) in &remaining[processed..] {
+            let orig_idx = tool_uses.iter().position(|(tid, _, _)| tid == id).unwrap_or(0);
+            denied_results.push((orig_idx, ContentBlock::ToolResult {
+                tool_use_id: id.clone(), content: "Interrupted by user".into(), is_error: true,
+            }));
+            self.emit(AgentEventPayload::ToolResult {
+                id: id.clone(), name: name.clone(),
+                result: "Interrupted by user".into(), is_error: true,
+            }).await?;
+        }
+
         // Phase 2: Parallel execution via tool_exec
         let mut indexed_results: Vec<(usize, ContentBlock)> = Vec::new();
         indexed_results.extend(intercepted);
         indexed_results.extend(denied_results);
 
         if !approved.is_empty() {
-            let kernel = Arc::clone(&self.params.kernel);
+            let kernel = std::sync::Arc::clone(&self.params.kernel);
             let tool_ctx = self.tool_ctx.clone();
             let mode = self.params.mode;
             let parallel = execute_approved_tools(
-                approved, &tool_uses, kernel, tool_ctx, mode, &self.params.frontend,
+                approved, &tool_uses, kernel, tool_ctx, mode, &self.params.frontend, cancel,
             ).await;
             indexed_results.extend(parallel);
         }
@@ -163,26 +179,4 @@ impl AgentLoopRunner {
 
 fn tool_result_block(id: &str, content: &str) -> ContentBlock {
     ContentBlock::ToolResult { tool_use_id: id.to_string(), content: content.to_string(), is_error: false }
-}
-
-fn parse_questions(input: &serde_json::Value) -> Vec<Question> {
-    let Some(questions) = input.get("questions").and_then(|v| v.as_array()) else {
-        return vec![Question { question: "?".into(), options: Vec::new(), allow_multiple: false }];
-    };
-    questions.iter().map(|q| {
-        let question = q.get("question").and_then(|v| v.as_str()).unwrap_or("?").to_string();
-        let allow_multiple = q.get("multiSelect").and_then(|v| v.as_bool()).unwrap_or(false);
-        let options = q.get("options").and_then(|v| v.as_array()).map(|arr| {
-            arr.iter().map(|o| QuestionOption {
-                label: o.get("label").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                description: o.get("description").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-            }).collect()
-        }).unwrap_or_default();
-        Question { question, options, allow_multiple }
-    }).collect()
-}
-
-fn format_answers(answers: &[String]) -> String {
-    if answers.is_empty() { return "(no selection)".to_string(); }
-    answers.join(", ")
 }
