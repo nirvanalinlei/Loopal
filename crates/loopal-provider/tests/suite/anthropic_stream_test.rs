@@ -78,6 +78,7 @@ fn parse_with_state(
                 chunks.push(Ok(StreamChunk::Usage {
                     input_tokens: i as u32, output_tokens: o as u32,
                     cache_creation_input_tokens: cc, cache_read_input_tokens: cr,
+                    thinking_tokens: 0,
                 }));
             }
         }
@@ -91,6 +92,7 @@ fn parse_with_state(
                 chunks.push(Ok(StreamChunk::Usage {
                     input_tokens: i as u32, output_tokens: o as u32,
                     cache_creation_input_tokens: cc, cache_read_input_tokens: cr,
+                    thinking_tokens: 0,
                 }));
             }
         }

@@ -64,6 +64,7 @@ fn test_model_info_defaults_for_unknown_model() {
         tool_filter: None,
         shared: None,
         interactive: true,
+        thinking_config: loopal_provider_api::ThinkingConfig::Auto,
     };
 
     let runner = AgentLoopRunner::new(params);

@@ -28,6 +28,12 @@ pub enum AgentEventPayload {
     /// Streaming text chunk from LLM
     Stream { text: String },
 
+    /// Streaming thinking/reasoning chunk from LLM
+    ThinkingStream { text: String },
+
+    /// Thinking phase completed
+    ThinkingComplete { token_count: u32 },
+
     /// LLM is calling a tool
     ToolCall {
         id: String,
@@ -69,6 +75,7 @@ pub enum AgentEventPayload {
         context_window: u32,
         cache_creation_input_tokens: u32,
         cache_read_input_tokens: u32,
+        thinking_tokens: u32,
     },
 
     /// Mode changed

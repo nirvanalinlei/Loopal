@@ -1,5 +1,6 @@
 mod message_builder;
 mod stream;
+mod thinking;
 
 use async_trait::async_trait;
 use loopal_error::{LoopalError, ProviderError};
@@ -61,6 +62,12 @@ impl Provider for OpenAiProvider {
         }
         if let Some(temp) = params.temperature {
             body["temperature"] = json!(temp);
+        }
+        if let Some(ref thinking_config) = params.thinking {
+            body["reasoning_effort"] =
+                json!(thinking::to_openai_reasoning_effort(thinking_config));
+            // Reasoning models don't support temperature
+            body.as_object_mut().unwrap().remove("temperature");
         }
 
         // Add stream_options to get usage in stream

@@ -4,9 +4,11 @@ use futures::StreamExt;
 use loopal_error::Result;
 use loopal_message::Message;
 use loopal_protocol::AgentEventPayload;
-use loopal_provider_api::{ChatParams, StopReason, StreamChunk};
+use loopal_provider::{get_thinking_capability, resolve_thinking_config};
+use loopal_provider_api::{ChatParams, StreamChunk};
 use tracing::{error, info, warn};
 
+use super::llm_result::LlmStreamResult;
 use super::runner::AgentLoopRunner;
 
 impl AgentLoopRunner {
@@ -23,6 +25,12 @@ impl AgentLoopRunner {
             tool_defs.retain(|t| filter.contains(&t.name));
         }
 
+        // Resolve thinking config: Auto → concrete config based on model capability
+        let capability = get_thinking_capability(&self.params.model);
+        let resolved_thinking = resolve_thinking_config(
+            &self.thinking_config, capability, self.max_output_tokens,
+        );
+
         Ok(ChatParams {
             model: self.params.model.clone(),
             messages: messages.to_vec(),
@@ -30,19 +38,16 @@ impl AgentLoopRunner {
             tools: tool_defs,
             max_tokens: self.max_output_tokens,
             temperature: None,
+            thinking: resolved_thinking,
             debug_dump_dir: Some(loopal_config::tmp_dir()),
         })
     }
 
     /// Stream the LLM response using a provided working copy of messages.
-    ///
-    /// Unlike the old `stream_llm`, this does NOT call preflight — the caller
-    /// is responsible for running preflight on the working copy beforehand.
-    /// Returns (assistant_text, tool_uses, stream_error, stop_reason).
     pub async fn stream_llm_with(
         &mut self,
         messages: &[Message],
-    ) -> Result<(String, Vec<(String, String, serde_json::Value)>, bool, StopReason)> {
+    ) -> Result<LlmStreamResult> {
         let chat_params = self.prepare_chat_params_with(messages)?;
         let provider = self.params.kernel.resolve_provider(&self.params.model)?;
 
@@ -52,6 +57,7 @@ impl AgentLoopRunner {
             messages = messages.len(),
             tools = chat_params.tools.len(),
             max_tokens = chat_params.max_tokens,
+            thinking = ?chat_params.thinking,
             "LLM request"
         );
 
@@ -82,67 +88,92 @@ impl AgentLoopRunner {
             }
         };
 
-        let mut assistant_text = String::new();
-        let mut tool_uses: Vec<(String, String, serde_json::Value)> = Vec::new();
-        let mut stream_error = false;
-        let mut stop_reason = StopReason::EndTurn;
+        let mut result = LlmStreamResult {
+            assistant_text: String::new(),
+            tool_uses: Vec::new(),
+            stream_error: false,
+            stop_reason: loopal_provider_api::StopReason::EndTurn,
+            thinking_text: String::new(),
+            thinking_signature: None,
+            thinking_tokens: 0,
+        };
 
         while let Some(chunk_result) = stream.next().await {
             match chunk_result {
                 Ok(StreamChunk::Text { text }) => {
-                    assistant_text.push_str(&text);
+                    result.assistant_text.push_str(&text);
                     self.emit(AgentEventPayload::Stream { text }).await?;
+                }
+                Ok(StreamChunk::Thinking { text }) => {
+                    result.thinking_text.push_str(&text);
+                    self.emit(AgentEventPayload::ThinkingStream {
+                        text,
+                    }).await?;
+                }
+                Ok(StreamChunk::ThinkingSignature { signature }) => {
+                    result.thinking_signature = Some(signature);
                 }
                 Ok(StreamChunk::ToolUse { id, name, input }) => {
                     self.emit(AgentEventPayload::ToolCall {
                         id: id.clone(), name: name.clone(), input: input.clone(),
                     }).await?;
-                    tool_uses.push((id, name, input));
+                    result.tool_uses.push((id, name, input));
                 }
                 Ok(StreamChunk::Usage {
                     input_tokens, output_tokens,
                     cache_creation_input_tokens, cache_read_input_tokens,
+                    thinking_tokens,
                 }) => {
                     self.total_input_tokens += input_tokens;
                     self.total_output_tokens += output_tokens;
                     self.total_cache_creation_tokens += cache_creation_input_tokens;
                     self.total_cache_read_tokens += cache_read_input_tokens;
+                    self.total_thinking_tokens += thinking_tokens;
+                    result.thinking_tokens += thinking_tokens;
                     self.emit(AgentEventPayload::TokenUsage {
                         input_tokens, output_tokens,
                         context_window: self.max_context_tokens,
                         cache_creation_input_tokens, cache_read_input_tokens,
+                        thinking_tokens,
                     }).await?;
-                    info!(
-                        total_input = self.total_input_tokens,
-                        total_output = self.total_output_tokens,
-                        context_window = self.max_context_tokens,
-                        input_tokens, output_tokens,
-                        cache_creation = cache_creation_input_tokens,
-                        cache_read = cache_read_input_tokens,
-                        "token usage"
-                    );
                 }
-                Ok(StreamChunk::Done { stop_reason: reason }) => {
-                    stop_reason = reason;
+                Ok(StreamChunk::Done { stop_reason }) => {
+                    result.stop_reason = stop_reason;
                     break;
                 }
                 Err(e) => {
                     error!(error = %e, turn = self.turn_count, model = %self.params.model, "stream error");
                     self.emit(AgentEventPayload::Error { message: e.to_string() }).await?;
-                    stream_error = true;
+                    result.stream_error = true;
                     break;
                 }
             }
         }
 
+        // Emit ThinkingComplete after stream ends (Protected Variations:
+        // different providers report thinking tokens at different times).
+        // Also emit when thinking_tokens > 0 but no thinking_text (e.g. OpenAI
+        // reasoning models report tokens in Usage but don't stream content).
+        if !result.thinking_text.is_empty() || result.thinking_tokens > 0 {
+            let token_count = if result.thinking_text.is_empty() {
+                result.thinking_tokens
+            } else {
+                result.thinking_tokens.max(
+                    result.thinking_text.len() as u32 / 4, // fallback estimate
+                )
+            };
+            self.emit(AgentEventPayload::ThinkingComplete { token_count }).await?;
+        }
+
         let llm_duration = llm_start.elapsed();
         info!(
             duration_ms = llm_duration.as_millis() as u64,
-            tool_calls = tool_uses.len(),
-            has_text = !assistant_text.is_empty(),
+            tool_calls = result.tool_uses.len(),
+            has_text = !result.assistant_text.is_empty(),
+            thinking_tokens = result.thinking_tokens,
             "LLM complete"
         );
 
-        Ok((assistant_text, tool_uses, stream_error, stop_reason))
+        Ok(result)
     }
 }

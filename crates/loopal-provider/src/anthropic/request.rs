@@ -49,6 +49,11 @@ impl AnthropicProvider {
                                 "data": source.data
                             }
                         }),
+                        ContentBlock::Thinking { thinking, signature } => json!({
+                            "type": "thinking",
+                            "thinking": thinking,
+                            "signature": signature.as_deref().unwrap_or("")
+                        }),
                     })
                     .collect();
 

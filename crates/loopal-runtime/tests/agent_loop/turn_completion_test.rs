@@ -95,6 +95,7 @@ fn make_multi_runner(
         max_turns: 10, frontend, session_manager: SessionManager::with_base_dir(tmp),
         context_pipeline: ContextPipeline::new(),
         tool_filter: None, shared: None, interactive: false,
+        thinking_config: loopal_provider_api::ThinkingConfig::Auto,
     };
     (AgentLoopRunner::new(params), event_rx)
 }

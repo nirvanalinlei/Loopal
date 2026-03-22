@@ -1,4 +1,4 @@
-use loopal_provider_api::ModelInfo;
+use loopal_provider_api::{ModelInfo, ThinkingCapability};
 
 struct ModelEntry {
     id: &'static str,
@@ -8,6 +8,7 @@ struct ModelEntry {
     max_output_tokens: u32,
     input_price_per_mtok: f64,
     output_price_per_mtok: f64,
+    thinking: ThinkingCapability,
 }
 
 impl ModelEntry {
@@ -20,6 +21,7 @@ impl ModelEntry {
             max_output_tokens: self.max_output_tokens,
             input_price_per_mtok: self.input_price_per_mtok,
             output_price_per_mtok: self.output_price_per_mtok,
+            thinking: self.thinking,
         }
     }
 }
@@ -33,6 +35,7 @@ static KNOWN_MODELS: &[ModelEntry] = &[
         max_output_tokens: 16_384,
         input_price_per_mtok: 3.0,
         output_price_per_mtok: 15.0,
+        thinking: ThinkingCapability::BudgetRequired,
     },
     ModelEntry {
         id: "claude-sonnet-4-6",
@@ -42,6 +45,7 @@ static KNOWN_MODELS: &[ModelEntry] = &[
         max_output_tokens: 16_384,
         input_price_per_mtok: 3.0,
         output_price_per_mtok: 15.0,
+        thinking: ThinkingCapability::Adaptive,
     },
     ModelEntry {
         id: "claude-opus-4-20250514",
@@ -51,6 +55,7 @@ static KNOWN_MODELS: &[ModelEntry] = &[
         max_output_tokens: 32_000,
         input_price_per_mtok: 15.0,
         output_price_per_mtok: 75.0,
+        thinking: ThinkingCapability::BudgetRequired,
     },
     ModelEntry {
         id: "claude-opus-4-6",
@@ -60,6 +65,7 @@ static KNOWN_MODELS: &[ModelEntry] = &[
         max_output_tokens: 32_000,
         input_price_per_mtok: 15.0,
         output_price_per_mtok: 75.0,
+        thinking: ThinkingCapability::Adaptive,
     },
     ModelEntry {
         id: "claude-haiku-3-5-20241022",
@@ -69,6 +75,7 @@ static KNOWN_MODELS: &[ModelEntry] = &[
         max_output_tokens: 8_192,
         input_price_per_mtok: 0.8,
         output_price_per_mtok: 4.0,
+        thinking: ThinkingCapability::None,
     },
     ModelEntry {
         id: "gpt-4o",
@@ -78,6 +85,7 @@ static KNOWN_MODELS: &[ModelEntry] = &[
         max_output_tokens: 16_384,
         input_price_per_mtok: 2.5,
         output_price_per_mtok: 10.0,
+        thinking: ThinkingCapability::None,
     },
     ModelEntry {
         id: "gpt-4o-mini",
@@ -87,6 +95,7 @@ static KNOWN_MODELS: &[ModelEntry] = &[
         max_output_tokens: 16_384,
         input_price_per_mtok: 0.15,
         output_price_per_mtok: 0.6,
+        thinking: ThinkingCapability::None,
     },
     ModelEntry {
         id: "o3-mini",
@@ -96,6 +105,7 @@ static KNOWN_MODELS: &[ModelEntry] = &[
         max_output_tokens: 100_000,
         input_price_per_mtok: 1.1,
         output_price_per_mtok: 4.4,
+        thinking: ThinkingCapability::ReasoningEffort,
     },
     ModelEntry {
         id: "gemini-2.0-flash",
@@ -105,6 +115,7 @@ static KNOWN_MODELS: &[ModelEntry] = &[
         max_output_tokens: 8_192,
         input_price_per_mtok: 0.075,
         output_price_per_mtok: 0.3,
+        thinking: ThinkingCapability::None,
     },
     ModelEntry {
         id: "gemini-2.5-pro-preview-05-06",
@@ -114,6 +125,7 @@ static KNOWN_MODELS: &[ModelEntry] = &[
         max_output_tokens: 65_536,
         input_price_per_mtok: 1.25,
         output_price_per_mtok: 10.0,
+        thinking: ThinkingCapability::ThinkingBudget,
     },
 ];
 
@@ -129,6 +141,22 @@ pub fn get_model_info(model_id: &str) -> Option<ModelInfo> {
         .map(|m| m.to_model_info())
 }
 
+/// Return the thinking capability for a model id.
+/// Falls back to prefix-based heuristic for unknown models.
+pub fn get_thinking_capability(model_id: &str) -> ThinkingCapability {
+    if let Some(entry) = KNOWN_MODELS.iter().find(|m| m.id == model_id) {
+        return entry.thinking;
+    }
+    // Heuristic for unknown models
+    if model_id.starts_with("o1") || model_id.starts_with("o3") || model_id.starts_with("o4") {
+        ThinkingCapability::ReasoningEffort
+    } else if model_id.contains("gemini-2.5") {
+        ThinkingCapability::ThinkingBudget
+    } else {
+        ThinkingCapability::None
+    }
+}
+
 /// Resolve provider name from model id prefix.
 pub fn resolve_provider(model_id: &str) -> &'static str {
     if model_id.starts_with("claude") {
@@ -136,6 +164,7 @@ pub fn resolve_provider(model_id: &str) -> &'static str {
     } else if model_id.starts_with("gpt-")
         || model_id.starts_with("o1")
         || model_id.starts_with("o3")
+        || model_id.starts_with("o4")
     {
         "openai"
     } else if model_id.starts_with("gemini") {
@@ -144,4 +173,3 @@ pub fn resolve_provider(model_id: &str) -> &'static str {
         "openai_compat"
     }
 }
-

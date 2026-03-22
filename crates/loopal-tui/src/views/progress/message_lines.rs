@@ -17,14 +17,33 @@ pub fn message_to_lines(msg: &DisplayMessage, width: u16) -> Vec<Line<'static>> 
         "assistant" => ("Agent", Style::default().fg(Color::Cyan).bold()),
         "error" => ("Error", Style::default().fg(Color::Red).bold()),
         "system" => ("System", Style::default().fg(Color::Yellow).bold()),
+        "thinking" => ("Thinking", Style::default().fg(Color::Magenta).add_modifier(Modifier::DIM)),
         other => (other, Style::default().bold()),
     };
     lines.push(Line::from(Span::styled(format!("{}: ", label), style)));
 
-    // Content — markdown rendering for assistant, plain wrap for others
+    // Content — markdown rendering for assistant, dim purple for thinking, plain wrap for others
     if !msg.content.is_empty() {
         if msg.role == "assistant" {
             lines.extend(markdown::render_markdown(&msg.content, width));
+        } else if msg.role == "thinking" {
+            let dim_purple = Style::default()
+                .fg(Color::Magenta)
+                .add_modifier(Modifier::DIM);
+            for line in msg.content.lines() {
+                lines.extend(
+                    wrap_line(line, width)
+                        .into_iter()
+                        .map(|l| {
+                            let spans: Vec<Span> = l
+                                .spans
+                                .into_iter()
+                                .map(|s| Span::styled(s.content, dim_purple))
+                                .collect();
+                            Line::from(spans)
+                        }),
+                );
+            }
         } else {
             for line in msg.content.lines() {
                 lines.extend(wrap_line(line, width));

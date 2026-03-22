@@ -1,7 +1,7 @@
 use loopal_provider::get_model_info;
 use loopal_error::{AgentOutput, Result};
 use loopal_protocol::AgentEventPayload;
-use loopal_provider_api::StopReason;
+use loopal_provider_api::{StopReason, ThinkingConfig};
 use loopal_tool_api::ToolContext;
 use tracing::{Instrument, info, info_span, warn};
 
@@ -16,6 +16,8 @@ pub struct AgentLoopRunner {
     pub total_output_tokens: u32,
     pub total_cache_creation_tokens: u32,
     pub total_cache_read_tokens: u32,
+    pub total_thinking_tokens: u32,
+    pub thinking_config: ThinkingConfig,
     pub max_context_tokens: u32,
     pub max_output_tokens: u32,
 }
@@ -32,10 +34,13 @@ impl AgentLoopRunner {
         let model_info = get_model_info(&params.model);
         let max_context_tokens = model_info.as_ref().map_or(200_000, |m| m.context_window);
         let max_output_tokens = model_info.as_ref().map_or(16_384, |m| m.max_output_tokens);
+        let thinking_config = params.thinking_config.clone();
         Self {
             params, tool_ctx, turn_count: 0,
             total_input_tokens: 0, total_output_tokens: 0,
             total_cache_creation_tokens: 0, total_cache_read_tokens: 0,
+            total_thinking_tokens: 0,
+            thinking_config,
             max_context_tokens, max_output_tokens,
         }
     }
@@ -83,14 +88,16 @@ impl AgentLoopRunner {
                 return Ok(TurnOutput { output: last_text });
             }
             self.preflight_check_on(&mut working);
-            let (text, tool_uses, stream_error, stop_reason) =
-                self.stream_llm_with(&working).await?;
+            let result = self.stream_llm_with(&working).await?;
 
             // max_tokens + tool calls → tool arguments may be truncated, discard tools
-            if stop_reason == StopReason::MaxTokens && !tool_uses.is_empty() {
+            if result.stop_reason == StopReason::MaxTokens && !result.tool_uses.is_empty() {
                 warn!("max_tokens hit with tool calls — discarding truncated tools");
-                self.record_assistant_message(&text, &[]);
-                if !text.is_empty() { last_text.clone_from(&text); }
+                self.record_assistant_message(
+                    &result.assistant_text, &[],
+                    &result.thinking_text, result.thinking_signature.as_deref(),
+                );
+                if !result.assistant_text.is_empty() { last_text.clone_from(&result.assistant_text); }
                 if continuation_count < MAX_AUTO_CONTINUATIONS {
                     continuation_count += 1;
                     self.emit(AgentEventPayload::AutoContinuation {
@@ -103,15 +110,18 @@ impl AgentLoopRunner {
             }
 
             // Record to persistent history (params.messages + storage)
-            self.record_assistant_message(&text, &tool_uses);
-            if !text.is_empty() { last_text.clone_from(&text); }
+            self.record_assistant_message(
+                &result.assistant_text, &result.tool_uses,
+                &result.thinking_text, result.thinking_signature.as_deref(),
+            );
+            if !result.assistant_text.is_empty() { last_text.clone_from(&result.assistant_text); }
 
-            if stream_error && tool_uses.is_empty() && text.is_empty() {
+            if result.stream_error && result.tool_uses.is_empty() && result.assistant_text.is_empty() {
                 return Ok(TurnOutput { output: last_text });
             }
 
             // max_tokens + pure text → auto-continue
-            if tool_uses.is_empty() && stop_reason == StopReason::MaxTokens {
+            if result.tool_uses.is_empty() && result.stop_reason == StopReason::MaxTokens {
                 if continuation_count < MAX_AUTO_CONTINUATIONS {
                     continuation_count += 1;
                     self.emit(AgentEventPayload::AutoContinuation {
@@ -123,12 +133,12 @@ impl AgentLoopRunner {
                 return Ok(TurnOutput { output: last_text });
             }
 
-            if tool_uses.is_empty() {
-                return Ok(TurnOutput { output: text });
+            if result.tool_uses.is_empty() {
+                return Ok(TurnOutput { output: result.assistant_text });
             }
 
             // Execute tools → results appended to persistent params.messages
-            let completion_result = self.execute_tools(tool_uses).await?;
+            let completion_result = self.execute_tools(result.tool_uses).await?;
             self.inject_pending_messages().await;
             continuation_count = 0;
 

@@ -110,6 +110,7 @@ impl Middleware for SmartCompact {
             tools: vec![],
             max_tokens: 1024,
             temperature: Some(0.0),
+            thinking: None,
             debug_dump_dir: None,
         };
 
@@ -126,7 +127,10 @@ impl Middleware for SmartCompact {
                             compact_messages(&mut ctx.messages, self.keep_last);
                             return Ok(());
                         }
-                        _ => {}
+                        Ok(StreamChunk::Thinking { .. }
+                            | StreamChunk::ThinkingSignature { .. }
+                            | StreamChunk::ToolUse { .. }
+                            | StreamChunk::Usage { .. }) => {}
                     }
                 }
 

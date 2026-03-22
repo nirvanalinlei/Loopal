@@ -76,6 +76,7 @@ pub fn make_runner() -> (AgentLoopRunner, mpsc::Receiver<AgentEvent>) {
         tool_filter: None,
         shared: None,
         interactive: true,
+        thinking_config: loopal_provider_api::ThinkingConfig::Auto,
     };
 
     (AgentLoopRunner::new(params), event_rx)
@@ -132,6 +133,7 @@ pub fn make_runner_with_channels() -> (
         tool_filter: None,
         shared: None,
         interactive: true,
+        thinking_config: loopal_provider_api::ThinkingConfig::Auto,
     };
 
     (AgentLoopRunner::new(params), event_rx, mbox_tx, ctrl_tx, perm_tx)

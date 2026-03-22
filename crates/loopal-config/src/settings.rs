@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::hook::HookConfig;
 use crate::sandbox::SandboxConfig;
+use loopal_provider_api::ThinkingConfig;
 use loopal_tool_api::PermissionMode;
 
 /// Application settings (merged from multiple layers)
@@ -41,6 +42,10 @@ pub struct Settings {
     /// Sandbox configuration
     #[serde(default)]
     pub sandbox: SandboxConfig,
+
+    /// Thinking/reasoning configuration (default: Auto)
+    #[serde(default)]
+    pub thinking: ThinkingConfig,
 }
 
 impl Default for Settings {
@@ -55,6 +60,7 @@ impl Default for Settings {
             hooks: Vec::new(),
             mcp_servers: IndexMap::new(),
             sandbox: SandboxConfig::default(),
+            thinking: ThinkingConfig::default(),
         }
     }
 }

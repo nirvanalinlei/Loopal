@@ -60,12 +60,14 @@ pub(crate) fn parse_google_event(data: &str) -> Vec<Result<StreamChunk, LoopalEr
     if let Some(usage) = parsed.get("usageMetadata") {
         let input = usage["promptTokenCount"].as_u64().unwrap_or(0) as u32;
         let output = usage["candidatesTokenCount"].as_u64().unwrap_or(0) as u32;
+        let thinking = usage["thoughtsTokenCount"].as_u64().unwrap_or(0) as u32;
         if input > 0 || output > 0 {
             chunks.push(Ok(StreamChunk::Usage {
                 input_tokens: input,
                 output_tokens: output,
                 cache_creation_input_tokens: 0,
                 cache_read_input_tokens: 0,
+                thinking_tokens: thinking,
             }));
         }
     }
@@ -79,9 +81,15 @@ pub(crate) fn parse_google_event(data: &str) -> Vec<Result<StreamChunk, LoopalEr
                 for part in parts {
                     if let Some(text) = part["text"].as_str()
                         && !text.is_empty() {
-                            chunks.push(Ok(StreamChunk::Text {
-                                text: text.to_string(),
-                            }));
+                            if part.get("thought").and_then(|v| v.as_bool()).unwrap_or(false) {
+                                chunks.push(Ok(StreamChunk::Thinking {
+                                    text: text.to_string(),
+                                }));
+                            } else {
+                                chunks.push(Ok(StreamChunk::Text {
+                                    text: text.to_string(),
+                                }));
+                            }
                         }
 
                     if let Some(fc) = part.get("functionCall") {

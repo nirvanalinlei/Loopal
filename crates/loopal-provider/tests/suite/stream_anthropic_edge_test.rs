@@ -14,6 +14,7 @@ fn test_chat_params() -> ChatParams {
         tools: vec![],
         max_tokens: 100,
         temperature: None,
+        thinking: None,
         debug_dump_dir: None,
     }
 }

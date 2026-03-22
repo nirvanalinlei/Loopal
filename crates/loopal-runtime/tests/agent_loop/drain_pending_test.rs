@@ -113,6 +113,7 @@ async fn test_subagent_drains_pending_before_exit() {
         tool_filter: None,
         shared: None,
         interactive: false, // Sub-agent mode — exits after first LLM response
+        thinking_config: loopal_provider_api::ThinkingConfig::Auto,
     };
 
     // Drain events in background so channels don't block

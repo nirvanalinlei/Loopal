@@ -47,6 +47,10 @@ pub(crate) fn apply_agent_event(
         AgentEventPayload::Stream { .. } => {
             agent.observable.status = AgentStatus::Running;
         }
+        AgentEventPayload::ThinkingStream { .. } => {
+            agent.observable.status = AgentStatus::Running;
+        }
+        AgentEventPayload::ThinkingComplete { .. } => {}
         AgentEventPayload::MaxTurnsReached { .. } => {}
         AgentEventPayload::AutoContinuation { .. } => {}
         AgentEventPayload::MessageRouted { .. } => {}

@@ -128,6 +128,7 @@ pub async fn spawn_agent(
         context_pipeline: pipeline,
         shared: Some(shared_any),
         interactive: false,
+        thinking_config: loopal_provider_api::ThinkingConfig::Auto,
     };
 
     let agent_name = params.name.clone();

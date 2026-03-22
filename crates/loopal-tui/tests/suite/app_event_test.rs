@@ -71,6 +71,7 @@ fn test_handle_token_usage() {
         context_window: 200_000,
         cache_creation_input_tokens: 0,
         cache_read_input_tokens: 0,
+        thinking_tokens: 0,
     }));
 
     let state = app.session.lock();

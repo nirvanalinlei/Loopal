@@ -106,6 +106,7 @@ impl AcpHandler {
             tool_filter: None,
             shared: Some(shared),
             interactive: true,
+            thinking_config: self.config.settings.thinking.clone(),
         };
 
         tokio::spawn(async move {

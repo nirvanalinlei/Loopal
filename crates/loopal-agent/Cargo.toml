@@ -13,6 +13,7 @@ loopal-protocol = { workspace = true }
 loopal-tool-api = { workspace = true }
 loopal-config = { workspace = true }
 loopal-runtime = { workspace = true }
+loopal-provider-api = { workspace = true }
 loopal-kernel = { workspace = true }
 loopal-context = { workspace = true }
 loopal-storage = { workspace = true }

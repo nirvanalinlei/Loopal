@@ -6,12 +6,24 @@ use super::runner::AgentLoopRunner;
 impl AgentLoopRunner {
     /// Record the assistant response as a message in the conversation history.
     /// Writes to both persistent storage and in-memory params.messages.
+    /// Thinking block is placed first (Anthropic multi-turn requirement).
     pub fn record_assistant_message(
         &mut self,
         assistant_text: &str,
         tool_uses: &[(String, String, serde_json::Value)],
+        thinking_text: &str,
+        thinking_signature: Option<&str>,
     ) {
         let mut assistant_content: Vec<ContentBlock> = Vec::new();
+
+        // Thinking block goes first (Anthropic API requires this order)
+        if !thinking_text.is_empty() {
+            assistant_content.push(ContentBlock::Thinking {
+                thinking: thinking_text.to_string(),
+                signature: thinking_signature.map(String::from),
+            });
+        }
+
         if !assistant_text.is_empty() {
             assistant_content.push(ContentBlock::Text {
                 text: assistant_text.to_string(),

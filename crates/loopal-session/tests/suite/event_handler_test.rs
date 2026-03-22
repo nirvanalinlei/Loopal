@@ -109,6 +109,7 @@ fn test_token_usage_updates_counters() {
         context_window: 200_000,
         cache_creation_input_tokens: 10,
         cache_read_input_tokens: 80,
+        thinking_tokens: 0,
     }));
     assert_eq!(state.input_tokens, 100);
     assert_eq!(state.output_tokens, 50);

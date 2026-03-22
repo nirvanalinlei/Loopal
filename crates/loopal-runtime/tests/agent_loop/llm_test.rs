@@ -54,13 +54,16 @@ async fn test_stream_llm_text_response() {
     let chunks = vec![
         Ok(StreamChunk::Text { text: "Hello ".to_string() }),
         Ok(StreamChunk::Text { text: "world!".to_string() }),
-        Ok(StreamChunk::Usage { input_tokens: 10, output_tokens: 5, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 }),
+        Ok(StreamChunk::Usage { input_tokens: 10, output_tokens: 5, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, thinking_tokens: 0 }),
         Ok(StreamChunk::Done { stop_reason: StopReason::EndTurn }),
     ];
     let (mut runner, mut event_rx, _input_tx, _ctrl_tx) = make_runner_with_mock_provider(chunks);
 
     let msgs = runner.params.messages.clone();
-    let (text, tool_uses, stream_error, _stop_reason) = runner.stream_llm_with(&msgs).await.unwrap();
+    let result = runner.stream_llm_with(&msgs).await.unwrap();
+    let text = result.assistant_text;
+    let tool_uses = result.tool_uses;
+    let stream_error = result.stream_error;
     assert_eq!(text, "Hello world!");
     assert!(tool_uses.is_empty());
     assert!(!stream_error);
@@ -84,13 +87,16 @@ async fn test_stream_llm_tool_use_response() {
             name: "Read".to_string(),
             input: serde_json::json!({"file_path": "/tmp/test.rs"}),
         }),
-        Ok(StreamChunk::Usage { input_tokens: 20, output_tokens: 10, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 }),
+        Ok(StreamChunk::Usage { input_tokens: 20, output_tokens: 10, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, thinking_tokens: 0 }),
         Ok(StreamChunk::Done { stop_reason: StopReason::EndTurn }),
     ];
     let (mut runner, _event_rx, _input_tx, _ctrl_tx) = make_runner_with_mock_provider(chunks);
 
     let msgs = runner.params.messages.clone();
-    let (text, tool_uses, stream_error, _stop_reason) = runner.stream_llm_with(&msgs).await.unwrap();
+    let result = runner.stream_llm_with(&msgs).await.unwrap();
+    let text = result.assistant_text;
+    let tool_uses = result.tool_uses;
+    let stream_error = result.stream_error;
     assert_eq!(text, "Let me read.");
     assert_eq!(tool_uses.len(), 1);
     assert_eq!(tool_uses[0].0, "tc-1");
@@ -107,7 +113,10 @@ async fn test_stream_llm_error_in_stream() {
     let (mut runner, _event_rx, _input_tx, _ctrl_tx) = make_runner_with_mock_provider(chunks);
 
     let msgs = runner.params.messages.clone();
-    let (text, tool_uses, stream_error, _stop_reason) = runner.stream_llm_with(&msgs).await.unwrap();
+    let result = runner.stream_llm_with(&msgs).await.unwrap();
+    let text = result.assistant_text;
+    let tool_uses = result.tool_uses;
+    let stream_error = result.stream_error;
     assert_eq!(text, "partial");
     assert!(tool_uses.is_empty());
     assert!(stream_error);
@@ -120,7 +129,10 @@ async fn test_stream_llm_empty_stream() {
     let (mut runner, _event_rx, _input_tx, _ctrl_tx) = make_runner_with_mock_provider(chunks);
 
     let msgs = runner.params.messages.clone();
-    let (text, tool_uses, stream_error, _stop_reason) = runner.stream_llm_with(&msgs).await.unwrap();
+    let result = runner.stream_llm_with(&msgs).await.unwrap();
+    let text = result.assistant_text;
+    let tool_uses = result.tool_uses;
+    let stream_error = result.stream_error;
     assert!(text.is_empty());
     assert!(tool_uses.is_empty());
     assert!(!stream_error);

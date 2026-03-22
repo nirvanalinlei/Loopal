@@ -72,11 +72,14 @@ pub(crate) fn parse_openai_event(
             usage["prompt_tokens"].as_u64(),
             usage["completion_tokens"].as_u64(),
         ) {
+            let thinking_tokens = usage["completion_tokens_details"]["reasoning_tokens"]
+                .as_u64().unwrap_or(0) as u32;
             chunks.push(Ok(StreamChunk::Usage {
                 input_tokens: input as u32,
                 output_tokens: output as u32,
                 cache_creation_input_tokens: 0,
                 cache_read_input_tokens: 0,
+                thinking_tokens,
             }));
         }
 

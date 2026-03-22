@@ -51,6 +51,8 @@ pub fn translate_event(payload: &AgentEventPayload, session_id: &str) -> Option<
         | AgentEventPayload::MessageRouted { .. }
         | AgentEventPayload::ToolPermissionRequest { .. }
         | AgentEventPayload::UserQuestionRequest { .. }
+        | AgentEventPayload::ThinkingStream { .. }
+        | AgentEventPayload::ThinkingComplete { .. }
         | AgentEventPayload::Rewound { .. } => return None,
     };
 

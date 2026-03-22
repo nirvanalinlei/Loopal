@@ -1,11 +1,12 @@
+mod request;
 mod stream;
+mod thinking;
 
 use async_trait::async_trait;
 use loopal_error::{LoopalError, ProviderError};
-use loopal_message::{ContentBlock, MessageRole};
 use loopal_provider_api::{ChatParams, ChatStream, Provider};
 use reqwest::Client;
-use serde_json::{json, Value};
+use serde_json::json;
 use std::collections::VecDeque;
 use std::time::Duration;
 
@@ -35,73 +36,6 @@ impl GoogleProvider {
         self.base_url = base_url;
         self
     }
-
-    pub fn build_contents(&self, params: &ChatParams) -> Vec<Value> {
-        params
-            .messages
-            .iter()
-            .filter(|m| m.role != MessageRole::System)
-            .map(|msg| {
-                let role = match msg.role {
-                    MessageRole::User => "user",
-                    MessageRole::Assistant => "model",
-                    MessageRole::System => unreachable!(),
-                };
-
-                let parts: Vec<Value> = msg
-                    .content
-                    .iter()
-                    .map(|block| match block {
-                        ContentBlock::Text { text } => json!({"text": text}),
-                        ContentBlock::ToolUse { name, input, .. } => json!({
-                            "functionCall": {
-                                "name": name,
-                                "args": input
-                            }
-                        }),
-                        ContentBlock::ToolResult {
-                            tool_use_id: _,
-                            content,
-                            ..
-                        } => json!({
-                            "functionResponse": {
-                                "name": "",
-                                "response": {"result": content}
-                            }
-                        }),
-                        ContentBlock::Image { source } => json!({
-                            "inlineData": {
-                                "mimeType": source.media_type,
-                                "data": source.data
-                            }
-                        }),
-                    })
-                    .collect();
-
-                json!({"role": role, "parts": parts})
-            })
-            .collect()
-    }
-
-    pub fn build_tools(&self, params: &ChatParams) -> Vec<Value> {
-        if params.tools.is_empty() {
-            return vec![];
-        }
-
-        let declarations: Vec<Value> = params
-            .tools
-            .iter()
-            .map(|tool| {
-                json!({
-                    "name": tool.name,
-                    "description": tool.description,
-                    "parameters": tool.input_schema
-                })
-            })
-            .collect();
-
-        vec![json!({"functionDeclarations": declarations})]
-    }
 }
 
 #[async_trait]
@@ -111,7 +45,6 @@ impl Provider for GoogleProvider {
     }
 
     async fn stream_chat(&self, params: &ChatParams) -> Result<ChatStream, LoopalError> {
-        // Normalize messages: filter system messages and merge consecutive same-role
         let normalized = loopal_message::normalize_messages(&params.messages);
         let normalized_params = ChatParams {
             messages: normalized,
@@ -132,13 +65,15 @@ impl Provider for GoogleProvider {
                 "parts": [{"text": params.system_prompt}]
             });
         }
-
         if !tools.is_empty() {
             body["tools"] = json!(tools);
         }
-
         if let Some(temp) = params.temperature {
             body["generationConfig"]["temperature"] = json!(temp);
+        }
+        if let Some(ref thinking_config) = params.thinking {
+            body["generationConfig"]["thinkingConfig"] =
+                thinking::to_google_thinking(thinking_config);
         }
 
         let url = format!(
@@ -166,7 +101,6 @@ impl Provider for GoogleProvider {
         let status = response.status();
         tracing::info!(status = status.as_u16(), "API response");
         if !status.is_success() {
-            // Detect rate limiting (429)
             if status.as_u16() == 429 {
                 let retry_after_ms = response
                     .headers()

@@ -40,13 +40,28 @@ pub fn render_progress(
     // Streaming lines (pre-wrapped at current width)
     let streaming = streaming_to_lines(&state.streaming_text, inner.width);
 
+    // Thinking indicator (shown during active thinking)
+    let thinking_lines = if state.thinking_active {
+        let token_est = state.streaming_thinking.len() as u32 / 4;
+        let indicator = format!("Thinking... ({} tokens)", token_est);
+        vec![Line::from(Span::styled(
+            indicator,
+            Style::default().fg(Color::Magenta).add_modifier(Modifier::DIM),
+        ))]
+    } else {
+        vec![]
+    };
+
     // Window: lines are already visual rows, no 4x buffer needed
     let window_size = visible_h + scroll_offset as usize;
     let cached_tail = line_cache.tail(window_size);
 
-    // Build the render lines: cached tail + streaming
-    let mut lines = Vec::with_capacity(cached_tail.len() + streaming.len());
+    // Build the render lines: cached tail + thinking + streaming
+    let mut lines = Vec::with_capacity(
+        cached_tail.len() + thinking_lines.len() + streaming.len(),
+    );
     lines.extend_from_slice(cached_tail);
+    lines.extend(thinking_lines);
     lines.extend(streaming);
 
     // Scroll: lines.len() == visual line count (pre-wrapped), so this is exact

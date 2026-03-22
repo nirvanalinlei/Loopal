@@ -11,6 +11,7 @@ async fn test_turn_text_only_non_interactive() {
         Ok(StreamChunk::Usage {
             input_tokens: 5, output_tokens: 3,
             cache_creation_input_tokens: 0, cache_read_input_tokens: 0,
+            thinking_tokens: 0,
         }),
         Ok(StreamChunk::Done { stop_reason: StopReason::EndTurn }),
     ];
@@ -43,6 +44,7 @@ async fn test_turn_tool_then_text_non_interactive() {
         Ok(StreamChunk::Usage {
             input_tokens: 10, output_tokens: 5,
             cache_creation_input_tokens: 0, cache_read_input_tokens: 0,
+            thinking_tokens: 0,
         }),
         Ok(StreamChunk::Done { stop_reason: StopReason::EndTurn }),
     ];

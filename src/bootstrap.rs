@@ -43,6 +43,7 @@ pub async fn run() -> anyhow::Result<()> {
     let model = config.settings.model.clone();
     let max_turns = config.settings.max_turns;
     let permission_mode = config.settings.permission_mode;
+    let thinking_config = config.settings.thinking.clone();
     let mode = if cli.plan { AgentMode::Plan } else { AgentMode::Act };
     let mode_str = if cli.plan { "plan" } else { "act" }.to_string();
 
@@ -150,6 +151,7 @@ pub async fn run() -> anyhow::Result<()> {
         tool_filter: None,
         shared: Some(shared_any),
         interactive: true,
+        thinking_config,
     };
 
     tokio::spawn(async move {

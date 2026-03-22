@@ -1,5 +1,7 @@
+mod accumulator;
 mod request;
 mod stream;
+mod thinking;
 
 use async_trait::async_trait;
 use loopal_error::{LoopalError, ProviderError};
@@ -11,7 +13,7 @@ use std::time::Duration;
 use tokio::sync::Semaphore;
 
 use crate::sse::SseStream;
-use stream::ToolUseAccumulator;
+use stream::{ThinkingAccumulator, ToolUseAccumulator};
 
 /// Maximum concurrent API requests to avoid overwhelming the upstream proxy/API.
 const MAX_CONCURRENT_REQUESTS: usize = 3;
@@ -98,6 +100,12 @@ impl AnthropicProvider {
         if let Some(temp) = params.temperature {
             body["temperature"] = json!(temp);
         }
+        if let Some(ref thinking_config) = params.thinking {
+            body["thinking"] = thinking::to_anthropic_thinking(thinking_config, params.max_tokens);
+            if let Some(output_config) = thinking::to_anthropic_output_config(thinking_config) {
+                body["output_config"] = output_config;
+            }
+        }
 
         tracing::info!(
             model = %params.model,
@@ -140,7 +148,8 @@ impl AnthropicProvider {
         let sse = SseStream::from_response(response);
         let stream = stream::AnthropicStream {
             inner: Box::pin(sse),
-            state: ToolUseAccumulator::default(),
+            tool_state: ToolUseAccumulator::default(),
+            thinking_state: ThinkingAccumulator::default(),
             buffer: VecDeque::new(),
         };
         Ok(Box::pin(stream))

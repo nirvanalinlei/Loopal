@@ -1,4 +1,6 @@
-use loopal_context::compaction::{find_largest_tool_result, truncate_block_content};
+use loopal_context::compaction::{
+    find_largest_tool_result, strip_old_thinking, truncate_block_content,
+};
 use loopal_context::compact_messages;
 use loopal_context::token_counter::{estimate_messages_tokens, estimate_tokens};
 use loopal_message::Message;
@@ -21,6 +23,9 @@ impl AgentLoopRunner {
     /// Iteratively truncates the largest ToolResult blocks, then falls back
     /// to compact_messages. The caller's `messages` vec is mutated in place.
     pub fn preflight_check_on(&self, messages: &mut Vec<Message>) {
+        // Strip old thinking blocks to save context tokens
+        strip_old_thinking(messages);
+
         let system_tokens = estimate_tokens(&self.params.system_prompt);
         let tool_overhead: u32 = 2000;
         let budget = (self.max_context_tokens as f64 * 0.95) as u32;

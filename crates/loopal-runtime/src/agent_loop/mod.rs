@@ -1,6 +1,7 @@
 mod input;
 mod llm;
 mod llm_record;
+pub(crate) mod llm_result;
 mod middleware;
 mod permission;
 mod preflight;
@@ -19,6 +20,7 @@ use loopal_storage::Session;
 use loopal_error::{AgentOutput, Result};
 use crate::frontend::traits::AgentFrontend;
 use loopal_message::Message;
+use loopal_provider_api::ThinkingConfig;
 use loopal_tool_api::PermissionMode;
 
 use crate::mode::AgentMode;
@@ -48,6 +50,8 @@ pub struct AgentLoopParams {
     /// Whether this agent waits for user input between turns.
     /// `true` for root agent (TUI interaction), `false` for sub-agents (exit on no tool calls).
     pub interactive: bool,
+    /// Thinking/reasoning configuration (default: Auto).
+    pub thinking_config: ThinkingConfig,
 }
 
 /// Public wrapper function that preserves the existing API.

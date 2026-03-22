@@ -137,6 +137,7 @@ fn test_event_token_usage_serde_roundtrip() {
         context_window: 200_000,
         cache_creation_input_tokens: 50,
         cache_read_input_tokens: 800,
+        thinking_tokens: 0,
     });
     let json = serde_json::to_string(&event).unwrap();
     let deserialized: AgentEvent = serde_json::from_str(&json).unwrap();
@@ -146,6 +147,7 @@ fn test_event_token_usage_serde_roundtrip() {
         context_window,
         cache_creation_input_tokens,
         cache_read_input_tokens,
+        thinking_tokens,
     } = deserialized.payload
     {
         assert_eq!(input_tokens, 1000);
@@ -153,6 +155,7 @@ fn test_event_token_usage_serde_roundtrip() {
         assert_eq!(context_window, 200_000);
         assert_eq!(cache_creation_input_tokens, 50);
         assert_eq!(cache_read_input_tokens, 800);
+        assert_eq!(thinking_tokens, 0);
     } else {
         panic!("expected AgentEventPayload::TokenUsage");
     }

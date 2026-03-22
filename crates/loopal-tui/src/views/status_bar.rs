@@ -49,6 +49,15 @@ pub fn render_status_bar(f: &mut Frame, state: &SessionState, area: Rect) {
         ));
     }
 
+    // Show thinking tokens when present
+    if state.thinking_tokens > 0 {
+        spans.push(Span::raw(" | "));
+        spans.push(Span::styled(
+            format!("think: {}k", state.thinking_tokens / 1000),
+            Style::default().fg(Color::Magenta),
+        ));
+    }
+
     spans.push(Span::raw(" | "));
     spans.push(Span::raw(format!("turns: {}", state.turn_count)));
     if !state.inbox.is_empty() {

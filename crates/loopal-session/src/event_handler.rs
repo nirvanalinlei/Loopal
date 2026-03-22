@@ -2,10 +2,11 @@
 //! root → main display, sub-agent → `agent_handler`. `MessageRouted` → global feed.
 
 use loopal_protocol::{AgentEvent, AgentEventPayload};
-use loopal_tool_api::COMPLETION_PREFIX;
 
 use crate::agent_handler::apply_agent_event;
-use crate::truncate::{truncate_json, truncate_result_for_storage};
+use crate::thinking_display::format_thinking_summary;
+use crate::tool_result_handler::handle_tool_result;
+use crate::truncate::truncate_json;
 use crate::message_log::MessageLogEntry;
 use crate::state::SessionState;
 use crate::types::{DisplayMessage, DisplayToolCall, PendingPermission};
@@ -13,11 +14,8 @@ use crate::types::{DisplayMessage, DisplayToolCall, PendingPermission};
 /// Handle an AgentEvent by mutating SessionState in-place.
 /// Returns `Some(text)` if an inbox message should be forwarded (agent became idle).
 pub fn apply_event(state: &mut SessionState, event: AgentEvent) -> Option<String> {
-    // Handle MessageRouted globally regardless of agent_name
     if let AgentEventPayload::MessageRouted {
-        ref source,
-        ref target,
-        ref content_preview,
+        ref source, ref target, ref content_preview,
     } = event.payload
     {
         record_message_routed(state, source, target, content_preview);
@@ -38,6 +36,24 @@ fn apply_root_event(state: &mut SessionState, payload: AgentEventPayload) -> Opt
         AgentEventPayload::Stream { text } => {
             state.begin_turn();
             state.streaming_text.push_str(&text);
+        }
+        AgentEventPayload::ThinkingStream { text } => {
+            state.begin_turn();
+            state.thinking_active = true;
+            state.streaming_thinking.push_str(&text);
+        }
+        AgentEventPayload::ThinkingComplete { token_count } => {
+            state.thinking_active = false;
+            state.thinking_tokens += token_count;
+            if !state.streaming_thinking.is_empty() {
+                let thinking = std::mem::take(&mut state.streaming_thinking);
+                let summary = format_thinking_summary(&thinking, token_count);
+                state.messages.push(DisplayMessage {
+                    role: "thinking".to_string(),
+                    content: summary,
+                    tool_calls: Vec::new(),
+                });
+            }
         }
         AgentEventPayload::ToolCall { id: _, name, input } => {
             flush_streaming(state);
@@ -70,9 +86,7 @@ fn apply_root_event(state: &mut SessionState, payload: AgentEventPayload) -> Opt
         AgentEventPayload::Error { message } => {
             flush_streaming(state);
             state.messages.push(DisplayMessage {
-                role: "error".to_string(),
-                content: message,
-                tool_calls: Vec::new(),
+                role: "error".to_string(), content: message, tool_calls: Vec::new(),
             });
         }
         AgentEventPayload::AwaitingInput => {
@@ -103,25 +117,26 @@ fn apply_root_event(state: &mut SessionState, payload: AgentEventPayload) -> Opt
         AgentEventPayload::TokenUsage {
             input_tokens, output_tokens, context_window,
             cache_creation_input_tokens, cache_read_input_tokens,
+            thinking_tokens: _, // accumulated via ThinkingComplete to avoid double-counting
         } => {
             state.input_tokens = input_tokens;
             state.output_tokens = output_tokens;
             state.context_window = context_window;
             state.cache_creation_tokens = cache_creation_input_tokens;
             state.cache_read_tokens = cache_read_input_tokens;
+            // Reset thinking_tokens on /clear (signaled by all-zero usage)
+            if input_tokens == 0 && output_tokens == 0 {
+                state.thinking_tokens = 0;
+            }
         }
-        AgentEventPayload::ModeChanged { mode } => {
-            state.mode = mode;
-        }
+        AgentEventPayload::ModeChanged { mode } => { state.mode = mode; }
         AgentEventPayload::Started => {}
         AgentEventPayload::Finished => {
             flush_streaming(state);
             state.end_turn();
             state.agent_idle = true;
         }
-        AgentEventPayload::MessageRouted { .. } => {
-            // Handled globally in apply_event() before this match.
-        }
+        AgentEventPayload::MessageRouted { .. } => {}
         AgentEventPayload::UserQuestionRequest { id, questions } => {
             flush_streaming(state);
             state.pending_question = Some(super::types::PendingQuestion::new(id, questions));
@@ -133,32 +148,19 @@ fn apply_root_event(state: &mut SessionState, payload: AgentEventPayload) -> Opt
     None
 }
 
-/// Handle ToolResult: update status, and promote AttemptCompletion to assistant message.
-fn handle_tool_result(state: &mut SessionState, name: String, result: String, is_error: bool) {
-    let status = if is_error { "error" } else { "success" };
-    let is_completion = name == "AttemptCompletion" && !is_error;
-    'outer: for msg in state.messages.iter_mut().rev() {
-        for tc in msg.tool_calls.iter_mut().rev() {
-            if tc.name == name && tc.status == "pending" {
-                tc.status = status.to_string();
-                if !is_completion { tc.result = Some(truncate_result_for_storage(&result)); }
-                break 'outer;
-            }
-        }
-    }
-    // Promote AttemptCompletion to assistant message (prefix from AttemptCompletionTool)
-    if is_completion {
-        let content = result.strip_prefix(COMPLETION_PREFIX).unwrap_or(&result);
-        state.messages.push(DisplayMessage {
-            role: "assistant".into(),
-            content: content.to_string(),
-            tool_calls: Vec::new(),
-        });
-    }
-}
-
 /// Flush buffered streaming text into a DisplayMessage.
 pub(crate) fn flush_streaming(state: &mut SessionState) {
+    // Flush thinking first
+    if !state.streaming_thinking.is_empty() {
+        let thinking = std::mem::take(&mut state.streaming_thinking);
+        let token_est = thinking.len() as u32 / 4;
+        let summary = format_thinking_summary(&thinking, token_est);
+        state.messages.push(DisplayMessage {
+            role: "thinking".to_string(), content: summary, tool_calls: Vec::new(),
+        });
+        state.thinking_active = false;
+    }
+
     if !state.streaming_text.is_empty() {
         let text = std::mem::take(&mut state.streaming_text);
         if let Some(last) = state.messages.last_mut()
@@ -169,9 +171,7 @@ pub(crate) fn flush_streaming(state: &mut SessionState) {
             return;
         }
         state.messages.push(DisplayMessage {
-            role: "assistant".to_string(),
-            content: text,
-            tool_calls: Vec::new(),
+            role: "assistant".to_string(), content: text, tool_calls: Vec::new(),
         });
     }
 }

@@ -23,7 +23,7 @@ fn parse_with_state(
 
     if let Some(usage) = parsed.get("usage").filter(|u| !u.is_null())
         && let (Some(i), Some(o)) = (usage["prompt_tokens"].as_u64(), usage["completion_tokens"].as_u64()) {
-            chunks.push(Ok(StreamChunk::Usage { input_tokens: i as u32, output_tokens: o as u32, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 }));
+            chunks.push(Ok(StreamChunk::Usage { input_tokens: i as u32, output_tokens: o as u32, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, thinking_tokens: 0 }));
         }
 
     let choices = match parsed["choices"].as_array() {

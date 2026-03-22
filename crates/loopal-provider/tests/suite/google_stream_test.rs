@@ -16,7 +16,7 @@ fn parse_event(data: &str) -> Vec<Result<StreamChunk, LoopalError>> {
         let input = usage["promptTokenCount"].as_u64().unwrap_or(0) as u32;
         let output = usage["candidatesTokenCount"].as_u64().unwrap_or(0) as u32;
         if input > 0 || output > 0 {
-            chunks.push(Ok(StreamChunk::Usage { input_tokens: input, output_tokens: output, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 }));
+            chunks.push(Ok(StreamChunk::Usage { input_tokens: input, output_tokens: output, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, thinking_tokens: 0 }));
         }
     }
 

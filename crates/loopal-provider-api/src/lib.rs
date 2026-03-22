@@ -1,13 +1,17 @@
-use std::pin::Pin;
+pub mod thinking;
+
 use std::path::PathBuf;
+use std::pin::Pin;
 use std::sync::Arc;
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-use loopal_tool_api::ToolDefinition;
 use loopal_error::LoopalError;
 use loopal_message::Message;
+use loopal_tool_api::ToolDefinition;
+
+pub use thinking::*;
 
 // ---------------------------------------------------------------------------
 // Provider trait
@@ -39,9 +43,30 @@ pub struct ChatParams {
     pub tools: Vec<ToolDefinition>,
     pub max_tokens: u32,
     pub temperature: Option<f32>,
+    pub thinking: Option<ThinkingConfig>,
     /// Directory for dumping failed API request bodies (diagnosis).
     /// Typically `locations::tmp_dir()`. `None` disables dumping.
     pub debug_dump_dir: Option<PathBuf>,
+}
+
+impl ChatParams {
+    /// Convenience constructor with sensible defaults for optional fields.
+    pub fn new(
+        model: String,
+        messages: Vec<Message>,
+        system_prompt: String,
+    ) -> Self {
+        Self {
+            model,
+            messages,
+            system_prompt,
+            tools: vec![],
+            max_tokens: 16_384,
+            temperature: None,
+            thinking: None,
+            debug_dump_dir: None,
+        }
+    }
 }
 
 /// Why the LLM stopped generating output.
@@ -58,6 +83,12 @@ pub enum StreamChunk {
     Text {
         text: String,
     },
+    Thinking {
+        text: String,
+    },
+    ThinkingSignature {
+        signature: String,
+    },
     ToolUse {
         id: String,
         name: String,
@@ -68,6 +99,7 @@ pub enum StreamChunk {
         output_tokens: u32,
         cache_creation_input_tokens: u32,
         cache_read_input_tokens: u32,
+        thinking_tokens: u32,
     },
     Done {
         stop_reason: StopReason,
@@ -84,6 +116,7 @@ pub struct ModelInfo {
     pub max_output_tokens: u32,
     pub input_price_per_mtok: f64,
     pub output_price_per_mtok: f64,
+    pub thinking: ThinkingCapability,
 }
 
 // ---------------------------------------------------------------------------

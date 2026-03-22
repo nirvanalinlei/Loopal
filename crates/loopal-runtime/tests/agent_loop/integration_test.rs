@@ -50,6 +50,7 @@ async fn test_agent_loop_immediate_channel_close() {
         frontend, session_manager: SessionManager::with_base_dir(tmp),
         context_pipeline: ContextPipeline::new(),
         tool_filter: None, shared: None, interactive: true,
+        thinking_config: loopal_provider_api::ThinkingConfig::Auto,
     };
 
     // Drop senders to close channels
@@ -87,6 +88,7 @@ async fn test_agent_loop_max_turns_reached() {
         frontend, session_manager: SessionManager::with_base_dir(tmp),
         context_pipeline: ContextPipeline::new(),
         tool_filter: None, shared: None, interactive: true,
+        thinking_config: loopal_provider_api::ThinkingConfig::Auto,
     };
 
     let result = agent_loop(params).await;
@@ -105,6 +107,7 @@ async fn test_full_run_text_only_then_input_close() {
         Ok(StreamChunk::Usage {
             input_tokens: 5, output_tokens: 3,
             cache_creation_input_tokens: 0, cache_read_input_tokens: 0,
+            thinking_tokens: 0,
         }),
         Ok(StreamChunk::Done { stop_reason: StopReason::EndTurn }),
     ];
@@ -143,6 +146,7 @@ async fn test_full_run_with_tool_execution() {
             Ok(StreamChunk::Usage {
                 input_tokens: 10, output_tokens: 5,
                 cache_creation_input_tokens: 0, cache_read_input_tokens: 0,
+                thinking_tokens: 0,
             }),
             Ok(StreamChunk::Done { stop_reason: StopReason::EndTurn }),
         ],

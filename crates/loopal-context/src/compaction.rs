@@ -73,3 +73,24 @@ pub fn truncate_block_content(block: &mut ContentBlock, max_lines: usize, max_by
     ));
     *content = result;
 }
+
+/// Strip `ContentBlock::Thinking` blocks from all assistant messages except the last one.
+/// The last assistant message's thinking block must be preserved for Anthropic signature
+/// verification in multi-turn conversations. Older thinking blocks waste context tokens.
+pub fn strip_old_thinking(messages: &mut [Message]) {
+    // Find the index of the last assistant message
+    let last_assistant_idx = messages
+        .iter()
+        .rposition(|m| m.role == MessageRole::Assistant);
+
+    for (i, msg) in messages.iter_mut().enumerate() {
+        if msg.role != MessageRole::Assistant {
+            continue;
+        }
+        if Some(i) == last_assistant_idx {
+            continue; // preserve thinking in the last assistant message
+        }
+        msg.content
+            .retain(|block| !matches!(block, ContentBlock::Thinking { .. }));
+    }
+}

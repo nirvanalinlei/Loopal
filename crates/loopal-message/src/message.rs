@@ -75,6 +75,7 @@ impl Message {
                 ContentBlock::ToolUse { input, .. } => input.to_string().len() as u32 / 4,
                 ContentBlock::ToolResult { content, .. } => content.len() as u32 / 4,
                 ContentBlock::Image { .. } => 1000, // fixed estimate for images
+                ContentBlock::Thinking { thinking, .. } => thinking.len() as u32 / 4,
             })
             .sum();
         // +4 for role/message overhead
@@ -100,6 +101,11 @@ pub enum ContentBlock {
     },
     Image {
         source: ImageSource,
+    },
+    Thinking {
+        thinking: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        signature: Option<String>,
     },
 }
 

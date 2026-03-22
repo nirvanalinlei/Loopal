@@ -136,6 +136,7 @@ async fn test_check_permission_channel_closed_denies() {
         tool_filter: None,
         shared: None,
         interactive: true,
+        thinking_config: loopal_provider_api::ThinkingConfig::Auto,
     };
 
     let runner = AgentLoopRunner::new(params);

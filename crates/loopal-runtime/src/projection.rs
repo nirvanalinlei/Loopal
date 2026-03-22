@@ -49,6 +49,7 @@ pub fn project_messages(messages: &[Message]) -> Vec<DisplayMessage> {
                     );
                 }
                 ContentBlock::Image { .. } => content_parts.push("[image]".to_string()),
+                ContentBlock::Thinking { .. } => {} // Thinking blocks not shown in projection
             }
         }
 

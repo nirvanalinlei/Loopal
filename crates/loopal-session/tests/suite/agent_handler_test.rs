@@ -45,6 +45,7 @@ fn test_token_usage_updates_agent() {
     apply_event(&mut state, AgentEvent::named("w1", AgentEventPayload::TokenUsage {
         input_tokens: 500, output_tokens: 200, context_window: 100_000,
         cache_creation_input_tokens: 0, cache_read_input_tokens: 0,
+        thinking_tokens: 0,
     }));
     assert_eq!(state.agents["w1"].observable.input_tokens, 500);
     assert_eq!(state.agents["w1"].observable.output_tokens, 200);
