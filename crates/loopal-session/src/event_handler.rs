@@ -136,7 +136,10 @@ fn apply_root_event(state: &mut SessionState, payload: AgentEventPayload) -> Opt
         }
         AgentEventPayload::Interrupted => {
             flush_streaming(state);
-            state.messages.push(system_msg("Interrupted"));
+            // No system message — the status bar transitions to Idle and any
+            // pending tool results already show "Interrupted by user".  A
+            // chat-style "System: Interrupted" message would break the agent
+            // status-panel design.
             state.end_turn();
             state.agent_idle = true;
             return try_forward_inbox(state);

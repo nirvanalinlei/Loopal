@@ -6,5 +6,3 @@
 .loopal/settings.local.json
 .DS_Store
 
-# Third-party reference repos
-/refs/

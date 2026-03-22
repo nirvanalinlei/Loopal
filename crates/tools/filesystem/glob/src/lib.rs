@@ -1,10 +1,10 @@
 use async_trait::async_trait;
 use globset::{Glob, GlobSetBuilder};
+use ignore::WalkBuilder;
 use loopal_error::LoopalError;
 use loopal_tool_api::{PermissionLevel, Tool, ToolContext, ToolResult};
 use serde_json::{json, Value};
 use std::path::PathBuf;
-use walkdir::WalkDir;
 
 use loopal_tool_grep::grep_search::type_to_extensions;
 
@@ -103,9 +103,9 @@ impl Tool for GlobTool {
 
         let mut matches: Vec<(PathBuf, std::time::SystemTime)> = Vec::new();
 
-        for entry in WalkDir::new(&search_path)
+        for entry in WalkBuilder::new(&search_path)
             .follow_links(true)
-            .into_iter()
+            .build()
             .filter_map(|e| e.ok())
         {
             let path = entry.path();

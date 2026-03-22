@@ -14,7 +14,7 @@ serde_json = { workspace = true }
 async-trait = { workspace = true }
 regex = { workspace = true }
 globset = { workspace = true }
-walkdir = { workspace = true }
+ignore = { workspace = true }
 
 [dev-dependencies]
 loopal-backend = { workspace = true }

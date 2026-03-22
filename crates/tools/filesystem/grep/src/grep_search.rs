@@ -1,8 +1,8 @@
 use std::{collections::BTreeSet, path::PathBuf};
 
+use ignore::WalkBuilder;
 use loopal_error::LoopalError;
 use regex::Regex;
-use walkdir::WalkDir;
 
 /// Output format for grep results.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -111,11 +111,11 @@ pub fn search_files(
 
 fn collect_file_entries(search_path: &PathBuf) -> Vec<PathBuf> {
     if search_path.is_file() { return vec![search_path.clone()]; }
-    WalkDir::new(search_path)
+    WalkBuilder::new(search_path)
         .follow_links(true)
-        .into_iter()
+        .build()
         .filter_map(|e| e.ok())
-        .filter(|e| e.file_type().is_file())
+        .filter(|e| e.file_type().is_some_and(|ft| ft.is_file()))
         .map(|e| e.into_path())
         .collect()
 }

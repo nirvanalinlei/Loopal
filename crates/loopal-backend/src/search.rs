@@ -3,10 +3,10 @@
 use std::path::{Path, PathBuf};
 
 use globset::Glob;
+use ignore::WalkBuilder;
 use loopal_error::ToolIoError;
 use loopal_tool_api::backend_types::{GlobResult, GrepMatch, GrepResult};
 use regex::RegexBuilder;
-use walkdir::WalkDir;
 
 use crate::limits::ResourceLimits;
 
@@ -25,8 +25,8 @@ pub fn glob_search(
     let mut paths = Vec::new();
     let mut truncated = false;
 
-    for entry in WalkDir::new(&search_path).follow_links(true).into_iter().flatten() {
-        if !entry.file_type().is_file() {
+    for entry in WalkBuilder::new(&search_path).follow_links(true).build().flatten() {
+        if !entry.file_type().is_some_and(|ft| ft.is_file()) {
             continue;
         }
         let full = entry.into_path();
@@ -95,11 +95,11 @@ fn collect_files(search_path: &Path) -> Vec<PathBuf> {
     if search_path.is_file() {
         return vec![search_path.to_path_buf()];
     }
-    WalkDir::new(search_path)
+    WalkBuilder::new(search_path)
         .follow_links(true)
-        .into_iter()
+        .build()
         .filter_map(|e| e.ok())
-        .filter(|e| e.file_type().is_file())
+        .filter(|e| e.file_type().is_some_and(|ft| ft.is_file()))
         .map(|e| e.into_path())
         .collect()
 }

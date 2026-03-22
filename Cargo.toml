@@ -81,6 +81,7 @@ crossterm = "0.28"
 
 # File operations
 globset = "0.4"
+ignore = "0.4"
 regex = "1"
 walkdir = "2"
 
