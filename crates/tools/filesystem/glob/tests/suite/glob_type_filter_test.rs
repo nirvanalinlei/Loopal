@@ -3,7 +3,9 @@ use loopal_tool_glob::GlobTool;
 use serde_json::json;
 
 fn make_ctx(cwd: &std::path::Path) -> ToolContext {
-    ToolContext { cwd: cwd.to_path_buf(), session_id: "test".into(), shared: None }
+    let backend =
+        loopal_backend::LocalBackend::new(cwd.to_path_buf(), None, Default::default());
+    ToolContext { backend, session_id: "test".into(), shared: None }
 }
 
 fn make_file(dir: &std::path::Path, name: &str) {

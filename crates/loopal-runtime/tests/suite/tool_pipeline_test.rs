@@ -9,8 +9,26 @@ fn make_kernel() -> Kernel {
 }
 
 fn make_ctx() -> ToolContext {
+    let backend = loopal_backend::LocalBackend::new(
+        PathBuf::from("/tmp"),
+        None,
+        loopal_backend::ResourceLimits::default(),
+    );
     ToolContext {
-        cwd: PathBuf::from("/tmp"),
+        backend,
+        session_id: "test-session".to_string(),
+        shared: None,
+    }
+}
+
+fn make_ctx_for(cwd: PathBuf) -> ToolContext {
+    let backend = loopal_backend::LocalBackend::new(
+        cwd,
+        None,
+        loopal_backend::ResourceLimits::default(),
+    );
+    ToolContext {
+        backend,
         session_id: "test-session".to_string(),
         shared: None,
     }
@@ -43,12 +61,7 @@ async fn test_execute_read_tool_on_temp_file() {
     let test_file = tmp_dir.join("loopal_test_tool_pipeline_read.txt");
     std::fs::write(&test_file, "hello from test").unwrap();
 
-    let ctx = ToolContext {
-        cwd: tmp_dir.clone(),
-        session_id: "test-session".to_string(),
-        shared: None,
-    };
-
+    let ctx = make_ctx_for(tmp_dir.clone());
     let result = execute_tool(
         &kernel,
         "Read",
@@ -87,12 +100,7 @@ async fn test_execute_tool_in_plan_mode() {
     let test_file = tmp_dir.join("loopal_test_tool_pipeline_plan.txt");
     std::fs::write(&test_file, "plan mode test content").unwrap();
 
-    let ctx = ToolContext {
-        cwd: tmp_dir.clone(),
-        session_id: "test-session".to_string(),
-        shared: None,
-    };
-
+    let ctx = make_ctx_for(tmp_dir.clone());
     let result = execute_tool(
         &kernel,
         "Read",
@@ -113,17 +121,11 @@ async fn test_large_tool_output_is_truncated_and_saved() {
     let tmp_dir = std::env::temp_dir();
     let test_file = tmp_dir.join("loopal_test_tool_pipeline_large.txt");
 
-    // 100 lines × 5000 chars ≈ 500KB — exceeds 400KB pipeline limit
     let long_line = "X".repeat(5000);
     let content: String = (0..100).map(|_| long_line.as_str()).collect::<Vec<_>>().join("\n");
     std::fs::write(&test_file, &content).unwrap();
 
-    let ctx = ToolContext {
-        cwd: tmp_dir.clone(),
-        session_id: "test-session".to_string(),
-        shared: None,
-    };
-
+    let ctx = make_ctx_for(tmp_dir.clone());
     let result = execute_tool(
         &kernel,
         "Read",
@@ -143,7 +145,6 @@ async fn test_large_tool_output_is_truncated_and_saved() {
         "should contain saved file path"
     );
 
-    // Verify the saved file exists and contains full output
     let saved_marker = "[Full output saved to: ";
     let start = result.content.find(saved_marker).unwrap() + saved_marker.len();
     let end = result.content[start..].find(']').unwrap() + start;

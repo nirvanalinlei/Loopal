@@ -109,7 +109,7 @@ impl Tool for GrepTool {
         }
 
         let (re, search_opts, mode, head_limit, fmt_opts) = parse_params(&input, pattern)?;
-        let search_path = resolve_path(&input, ctx);
+        let search_path = resolve_path(&input, ctx)?;
         let include_glob = parse_include_glob(&input)?;
 
         let results = search_files(
@@ -172,13 +172,12 @@ fn parse_params(
     Ok((re, search_opts, mode, head_limit, fmt_opts))
 }
 
-fn resolve_path(input: &Value, ctx: &ToolContext) -> PathBuf {
+fn resolve_path(input: &Value, ctx: &ToolContext) -> Result<PathBuf, LoopalError> {
     match input["path"].as_str() {
-        Some(p) => {
-            let pb = PathBuf::from(p);
-            if pb.is_absolute() { pb } else { ctx.cwd.join(pb) }
-        }
-        None => ctx.cwd.clone(),
+        Some(p) => ctx.backend.resolve_path(p, false).map_err(|e| {
+            LoopalError::Tool(loopal_error::ToolError::ExecutionFailed(e.to_string()))
+        }),
+        None => Ok(ctx.backend.cwd().to_path_buf()),
     }
 }
 

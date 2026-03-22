@@ -3,10 +3,15 @@ use loopal_tool_read::ReadTool;
 use serde_json::json;
 
 fn make_ctx(cwd: &std::path::Path) -> ToolContext {
+    let backend = loopal_backend::LocalBackend::new(
+        cwd.to_path_buf(),
+        None,
+        loopal_backend::ResourceLimits::default(),
+    );
     ToolContext {
-        cwd: cwd.to_path_buf(),
         session_id: "test".into(),
         shared: None,
+        backend,
     }
 }
 
@@ -61,10 +66,7 @@ async fn test_read_offset_beyond_file_length() {
 
     let result = tool
         .execute(
-            json!({
-                "file_path": file.to_str().unwrap(),
-                "offset": 100
-            }),
+            json!({"file_path": file.to_str().unwrap(), "offset": 100}),
             &ctx,
         )
         .await
@@ -93,5 +95,5 @@ async fn test_read_path_traversal_protection() {
         .unwrap();
 
     assert!(result.is_error);
-    assert!(result.content.contains("path outside working directory"));
+    assert!(result.content.contains("path escapes working directory"));
 }

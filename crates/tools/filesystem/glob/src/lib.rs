@@ -67,11 +67,11 @@ impl Tool for GlobTool {
             })?;
 
         let search_path = match input["path"].as_str() {
-            Some(p) => {
-                let pb = PathBuf::from(p);
-                if pb.is_absolute() { pb } else { ctx.cwd.join(pb) }
-            }
-            None => ctx.cwd.clone(),
+            Some(p) => match ctx.backend.resolve_path(p, false) {
+                Ok(resolved) => resolved,
+                Err(e) => return Ok(ToolResult::error(e.to_string())),
+            },
+            None => ctx.backend.cwd().to_path_buf(),
         };
 
         let limit = input["limit"]

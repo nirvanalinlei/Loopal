@@ -3,7 +3,7 @@ use loopal_error::LoopalError;
 use loopal_tool_api::{PermissionLevel, Tool, ToolContext, ToolResult};
 use serde_json::{json, Value};
 
-use crate::{require_str, resolve_and_guard};
+use crate::require_str;
 
 pub struct DeleteTool;
 
@@ -33,39 +33,20 @@ impl Tool for DeleteTool {
 
     async fn execute(&self, input: Value, ctx: &ToolContext) -> Result<ToolResult, LoopalError> {
         let path_raw = require_str(&input, "path")?;
-        let path = resolve_and_guard(path_raw, &ctx.cwd)?;
 
-        if !path.exists() {
-            return Ok(ToolResult::error(format!(
-                "path does not exist: {}", path.display()
-            )));
-        }
+        // Check existence and type
+        let info = match ctx.backend.file_info(path_raw).await {
+            Ok(i) => i,
+            Err(e) => return Ok(ToolResult::error(e.to_string())),
+        };
 
-        let md = tokio::fs::metadata(&path).await.map_err(|e| {
-            LoopalError::Tool(loopal_error::ToolError::ExecutionFailed(format!(
-                "failed to read metadata: {e}"
-            )))
-        })?;
+        let kind = if info.is_dir { "directory" } else { "file" };
 
-        if md.is_dir() {
-            let count = std::fs::read_dir(&path).map(|rd| rd.count()).unwrap_or(0);
-            tokio::fs::remove_dir_all(&path).await.map_err(|e| {
-                LoopalError::Tool(loopal_error::ToolError::ExecutionFailed(format!(
-                    "failed to remove directory: {e}"
-                )))
-            })?;
-            Ok(ToolResult::success(format!(
-                "Deleted {} (directory, {} entries)", path.display(), count
-            )))
-        } else {
-            tokio::fs::remove_file(&path).await.map_err(|e| {
-                LoopalError::Tool(loopal_error::ToolError::ExecutionFailed(format!(
-                    "failed to remove file: {e}"
-                )))
-            })?;
-            Ok(ToolResult::success(format!(
-                "Deleted {} (file)", path.display()
-            )))
+        match ctx.backend.remove(path_raw).await {
+            Ok(()) => Ok(ToolResult::success(format!(
+                "Deleted {path_raw} ({kind})"
+            ))),
+            Err(e) => Ok(ToolResult::error(e.to_string())),
         }
     }
 }

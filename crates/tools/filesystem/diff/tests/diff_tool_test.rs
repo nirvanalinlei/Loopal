@@ -3,7 +3,16 @@ use loopal_tool_diff::DiffTool;
 use serde_json::json;
 
 fn make_ctx(cwd: &std::path::Path) -> ToolContext {
-    ToolContext { cwd: cwd.to_path_buf(), session_id: "test".into(), shared: None }
+    let backend = loopal_backend::LocalBackend::new(
+        cwd.to_path_buf(),
+        None,
+        loopal_backend::ResourceLimits::default(),
+    );
+    ToolContext {
+        session_id: "test".into(),
+        shared: None,
+        backend,
+    }
 }
 
 #[tokio::test]
@@ -45,8 +54,11 @@ async fn diff_file_not_found() {
     let ctx = make_ctx(tmp.path());
     let r = tool
         .execute(json!({"path_a": "a.txt", "path_b": "missing.txt"}), &ctx)
-        .await;
-    assert!(r.is_err() || r.as_ref().is_ok_and(|r| r.is_error));
+        .await
+        .unwrap();
+    assert!(r.is_error);
+    assert!(r.content.contains("not found") || r.content.contains("failed to read"),
+            "unexpected: {}", r.content);
 }
 
 #[tokio::test]

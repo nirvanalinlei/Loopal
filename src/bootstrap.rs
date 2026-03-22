@@ -51,7 +51,6 @@ pub async fn run() -> anyhow::Result<()> {
     // Build kernel — register agent tools before wrapping in Arc
     let mut kernel = Kernel::new(config.settings)?;
     kernel.start_mcp().await?;
-    kernel.init_sandbox(&cwd);
     loopal_agent::tools::register_all(&mut kernel);
     let kernel = Arc::new(kernel);
 

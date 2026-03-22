@@ -1,12 +1,9 @@
 use async_trait::async_trait;
-use futures::StreamExt;
 use loopal_error::LoopalError;
 use loopal_tool_api::{PermissionLevel, Tool, ToolContext, ToolResult};
 use serde_json::{json, Value};
 
 pub struct FetchTool;
-
-const MAX_BODY_BYTES: usize = 5 * 1024 * 1024; // 5 MB
 
 #[async_trait]
 impl Tool for FetchTool {
@@ -36,7 +33,7 @@ impl Tool for FetchTool {
 
     fn permission(&self) -> PermissionLevel { PermissionLevel::ReadOnly }
 
-    async fn execute(&self, input: Value, _ctx: &ToolContext) -> Result<ToolResult, LoopalError> {
+    async fn execute(&self, input: Value, ctx: &ToolContext) -> Result<ToolResult, LoopalError> {
         let url = input["url"].as_str().ok_or_else(|| {
             LoopalError::Tool(loopal_error::ToolError::InvalidInput("url is required".into()))
         })?;
@@ -48,57 +45,26 @@ impl Tool for FetchTool {
             )));
         }
 
+        let fetch_result = match ctx.backend.fetch(url).await {
+            Ok(r) => r,
+            Err(e) => return Ok(ToolResult::error(e.to_string())),
+        };
+
+        if !is_success(fetch_result.status) {
+            return Ok(ToolResult::error(format!("HTTP {}", fetch_result.status)));
+        }
+
+        let content_type = fetch_result.content_type.as_deref()
+            .unwrap_or("application/octet-stream");
+        let ext = extension_from_content_type(content_type);
         let prompt = input["prompt"].as_str();
 
-        let response = reqwest::get(url).await.map_err(|e| {
-            LoopalError::Tool(loopal_error::ToolError::ExecutionFailed(
-                format!("HTTP request failed: {e}"),
-            ))
-        })?;
-
-        let status = response.status();
-        if !status.is_success() {
-            return Ok(ToolResult::error(format!("HTTP {}", status.as_u16())));
-        }
-
-        if let Some(cl) = response.content_length()
-            && cl > MAX_BODY_BYTES as u64
-        {
-            return Ok(ToolResult::error(format!(
-                "Response too large: {cl} bytes exceeds {} byte limit", MAX_BODY_BYTES
-            )));
-        }
-
-        let content_type = response.headers()
-            .get(reqwest::header::CONTENT_TYPE)
-            .and_then(|v| v.to_str().ok())
-            .unwrap_or("application/octet-stream")
-            .to_string();
-
-        let ext = extension_from_content_type(&content_type);
-
-        let mut body_bytes = Vec::with_capacity(8192);
-        let mut stream = response.bytes_stream();
-        while let Some(chunk) = stream.next().await {
-            let chunk = chunk.map_err(|e| {
-                LoopalError::Tool(loopal_error::ToolError::ExecutionFailed(
-                    format!("Failed to read response: {e}"),
-                ))
-            })?;
-            body_bytes.extend_from_slice(&chunk);
-            if body_bytes.len() >= MAX_BODY_BYTES {
-                body_bytes.truncate(MAX_BODY_BYTES);
-                break;
-            }
-        }
-
-        // With prompt: return content inline (HTML → markdown conversion)
+        // With prompt: return content inline (HTML -> markdown conversion)
         if let Some(p) = prompt {
-            let raw = String::from_utf8_lossy(&body_bytes);
             let converted = if ext == "html" {
-                html2text::from_read(raw.as_bytes(), 120)
+                html2text::from_read(fetch_result.body.as_bytes(), 120)
             } else {
-                raw.into_owned()
+                fetch_result.body
             };
             let output = format!("[User prompt: {p}]\n\n{converted}");
             return Ok(ToolResult::success(loopal_tool_api::truncate_output(
@@ -106,27 +72,29 @@ impl Tool for FetchTool {
             )));
         }
 
-        // Without prompt: save to temp file
-        let size = body_bytes.len();
+        // Without prompt: save to temp file via backend
+        let size = fetch_result.body.len();
         let tmp_dir = std::env::temp_dir().join("loopal_fetch");
-        std::fs::create_dir_all(&tmp_dir).ok();
-        let ts = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_millis();
-        let file_path = tmp_dir.join(format!("fetch_{ts}.{ext}"));
+        let uuid = simple_uuid();
+        let file_path = tmp_dir.join(format!("fetch_{uuid}.{ext}"));
 
-        tokio::fs::write(&file_path, &body_bytes).await.map_err(|e| {
-            LoopalError::Tool(loopal_error::ToolError::ExecutionFailed(
-                format!("Failed to write temp file: {e}"),
-            ))
-        })?;
+        // Ensure temp directory exists, then write via backend
+        if let Err(e) = ctx.backend.create_dir_all(tmp_dir.to_str().unwrap_or(".")).await {
+            return Ok(ToolResult::error(format!("Failed to create temp dir: {e}")));
+        }
+        if let Err(e) = ctx.backend.write(file_path.to_str().unwrap_or("."), &fetch_result.body).await {
+            return Ok(ToolResult::error(format!("Failed to write temp file: {e}")));
+        }
 
         let path_str = file_path.to_string_lossy();
         Ok(ToolResult::success(format!(
             "Downloaded to: {path_str}\nContent-Type: {content_type}\nSize: {size} bytes"
         )))
     }
+}
+
+fn is_success(status: u16) -> bool {
+    (200..300).contains(&status)
 }
 
 fn extension_from_content_type(ct: &str) -> &str {
@@ -138,4 +106,15 @@ fn extension_from_content_type(ct: &str) -> &str {
     else if ct.contains("application/json") { "json" }
     else if ct.contains("text/") { "txt" }
     else { "bin" }
+}
+
+/// Minimal UUID v4 without external dependency (8 hex chars, good enough for temp files).
+fn simple_uuid() -> String {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .subsec_nanos();
+    let pid = std::process::id();
+    format!("{:08x}{:08x}", nanos, pid)
 }

@@ -1552,6 +1552,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "chrono",
+ "loopal-backend",
  "loopal-config",
  "loopal-context",
  "loopal-error",
@@ -1568,6 +1569,25 @@ dependencies = [
  "tokio-util",
  "tracing",
  "uuid",
+]
+
+[[package]]
+name = "loopal-backend"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "futures",
+ "globset",
+ "loopal-config",
+ "loopal-edit-core",
+ "loopal-error",
+ "loopal-sandbox",
+ "loopal-tool-api",
+ "loopal-tool-background",
+ "regex",
+ "reqwest",
+ "tokio",
+ "walkdir",
 ]
 
 [[package]]
@@ -1635,6 +1655,7 @@ dependencies = [
 name = "loopal-kernel"
 version = "0.1.0"
 dependencies = [
+ "loopal-backend",
  "loopal-config",
  "loopal-error",
  "loopal-hooks",
@@ -1724,6 +1745,7 @@ dependencies = [
  "async-trait",
  "chrono",
  "futures",
+ "loopal-backend",
  "loopal-config",
  "loopal-context",
  "loopal-error",
@@ -1750,18 +1772,10 @@ dependencies = [
 name = "loopal-sandbox"
 version = "0.1.0"
 dependencies = [
- "async-trait",
  "globset",
  "loopal-config",
- "loopal-error",
- "loopal-tool-api",
  "regex",
- "serde",
- "serde_json",
  "tempfile",
- "thiserror 2.0.18",
- "tokio",
- "tracing",
  "walkdir",
 ]
 
@@ -1808,6 +1822,7 @@ name = "loopal-tool-apply-patch"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "loopal-backend",
  "loopal-edit-core",
  "loopal-error",
  "loopal-tool-api",
@@ -1825,7 +1840,6 @@ dependencies = [
  "loopal-tool-api",
  "serde_json",
  "tempfile",
- "tokio",
 ]
 
 [[package]]
@@ -1833,6 +1847,7 @@ name = "loopal-tool-background"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "loopal-backend",
  "loopal-error",
  "loopal-tool-api",
  "loopal-tool-bash",
@@ -1846,9 +1861,9 @@ name = "loopal-tool-bash"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "loopal-backend",
  "loopal-error",
  "loopal-tool-api",
- "loopal-tool-background",
  "serde_json",
  "tempfile",
  "tokio",
@@ -1859,6 +1874,7 @@ name = "loopal-tool-diff"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "loopal-backend",
  "loopal-edit-core",
  "loopal-error",
  "loopal-tool-api",
@@ -1872,6 +1888,7 @@ name = "loopal-tool-edit"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "loopal-backend",
  "loopal-edit-core",
  "loopal-error",
  "loopal-tool-api",
@@ -1885,11 +1902,10 @@ name = "loopal-tool-fetch"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "futures",
  "html2text",
+ "loopal-backend",
  "loopal-error",
  "loopal-tool-api",
- "reqwest",
  "serde_json",
  "tempfile",
  "tokio",
@@ -1900,6 +1916,7 @@ name = "loopal-tool-file-ops"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "loopal-backend",
  "loopal-error",
  "loopal-tool-api",
  "serde_json",
@@ -1913,6 +1930,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "globset",
+ "loopal-backend",
  "loopal-error",
  "loopal-tool-api",
  "loopal-tool-grep",
@@ -1928,6 +1946,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "globset",
+ "loopal-backend",
  "loopal-error",
  "loopal-tool-api",
  "regex",
@@ -1942,6 +1961,7 @@ name = "loopal-tool-ls"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "loopal-backend",
  "loopal-error",
  "loopal-tool-api",
  "serde_json",
@@ -1954,6 +1974,7 @@ name = "loopal-tool-multi-edit"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "loopal-backend",
  "loopal-edit-core",
  "loopal-error",
  "loopal-tool-api",
@@ -1970,7 +1991,6 @@ dependencies = [
  "loopal-error",
  "loopal-tool-api",
  "serde_json",
- "tokio",
 ]
 
 [[package]]
@@ -1979,6 +1999,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "html2text",
+ "loopal-backend",
  "loopal-error",
  "loopal-tool-api",
  "pdf-extract",
@@ -1992,6 +2013,7 @@ name = "loopal-tool-web-search"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "loopal-backend",
  "loopal-error",
  "loopal-tool-api",
  "reqwest",
@@ -2006,6 +2028,7 @@ name = "loopal-tool-write"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "loopal-backend",
  "loopal-edit-core",
  "loopal-error",
  "loopal-tool-api",

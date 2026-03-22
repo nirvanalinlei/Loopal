@@ -1,8 +1,7 @@
 use async_trait::async_trait;
 use loopal_error::LoopalError;
-use loopal_tool_api::{PermissionLevel, Tool, ToolContext, ToolResult};
+use loopal_tool_api::{LsEntry, PermissionLevel, Tool, ToolContext, ToolResult};
 use serde_json::{json, Value};
-use std::path::PathBuf;
 
 use crate::ls_format;
 
@@ -44,83 +43,70 @@ impl Tool for LsTool {
     }
 
     async fn execute(&self, input: Value, ctx: &ToolContext) -> Result<ToolResult, LoopalError> {
-        let target = resolve_path(&input, ctx);
-        let md = tokio::fs::metadata(&target).await.map_err(|e| {
-            LoopalError::Tool(loopal_error::ToolError::ExecutionFailed(format!(
-                "Failed to access {}: {e}",
-                target.display()
-            )))
-        })?;
+        let raw_path = input["path"].as_str().unwrap_or(".");
 
-        // Single file → stat-like output
-        if !md.is_dir() {
-            return Ok(ToolResult::success(ls_format::format_stat(&target, &md)));
+        // Resolve path via backend (handles sandbox policy)
+        let target = match ctx.backend.resolve_path(raw_path, false) {
+            Ok(p) => p,
+            Err(e) => return Ok(ToolResult::error(e.to_string())),
+        };
+
+        // Single file -> stat-like output via backend
+        let info = match ctx.backend.file_info(target.to_str().unwrap_or(".")).await {
+            Ok(i) => i,
+            Err(e) => return Ok(ToolResult::error(e.to_string())),
+        };
+
+        if !info.is_dir {
+            return Ok(ToolResult::success(ls_format::format_stat_from_info(
+                &target, &info,
+            )));
         }
 
+        // Directory listing via backend
         let long = input["long"].as_bool().unwrap_or(false);
         let show_all = input["all"].as_bool().unwrap_or(false);
-        list_directory(&target, long, show_all).await
+
+        let ls_result = match ctx.backend.ls(target.to_str().unwrap_or(".")).await {
+            Ok(r) => r,
+            Err(e) => return Ok(ToolResult::error(e.to_string())),
+        };
+
+        format_entries(&ls_result.entries, long, show_all)
     }
 }
 
-fn resolve_path(input: &Value, ctx: &ToolContext) -> PathBuf {
-    match input["path"].as_str() {
-        Some(p) => {
-            let pb = PathBuf::from(p);
-            if pb.is_absolute() { pb } else { ctx.cwd.join(pb) }
-        }
-        None => ctx.cwd.clone(),
-    }
-}
-
-fn type_indicator(ft: Option<&std::fs::FileType>) -> &'static str {
-    match ft {
-        Some(ft) if ft.is_dir() => "/",
-        Some(ft) if ft.is_symlink() => "@",
-        _ => "",
-    }
-}
-
-async fn list_directory(
-    dir: &std::path::Path,
+fn format_entries(
+    entries: &[LsEntry],
     long: bool,
     show_all: bool,
 ) -> Result<ToolResult, LoopalError> {
-    let mut entries: Vec<(String, String)> = Vec::new();
-    let mut read_dir = tokio::fs::read_dir(dir).await.map_err(|e| {
-        LoopalError::Tool(loopal_error::ToolError::ExecutionFailed(format!(
-            "Failed to read directory {}: {e}",
-            dir.display()
-        )))
-    })?;
+    let filtered: Vec<&LsEntry> = entries
+        .iter()
+        .filter(|e| show_all || !e.name.starts_with('.'))
+        .collect();
 
-    while let Some(entry) = read_dir.next_entry().await.map_err(|e| {
-        LoopalError::Tool(loopal_error::ToolError::ExecutionFailed(format!(
-            "Failed to read entry: {e}",
-        )))
-    })? {
-        let name = entry.file_name().to_string_lossy().to_string();
-        if !show_all && name.starts_with('.') {
-            continue;
-        }
-        let ft = entry.file_type().await.ok();
-        let indicator = type_indicator(ft.as_ref());
-
-        let display = if long {
-            let md = entry.metadata().await.ok();
-            ls_format::format_long_entry(&name, indicator, md.as_ref())
-        } else {
-            format!("{name}{indicator}")
-        };
-        entries.push((name.to_lowercase(), display));
+    if filtered.is_empty() {
+        return Ok(ToolResult::success("(empty directory)"));
     }
 
-    entries.sort_by(|a, b| a.0.cmp(&b.0));
+    let lines: Vec<String> = filtered
+        .iter()
+        .map(|e| {
+            let indicator = if e.is_dir {
+                "/"
+            } else if e.is_symlink {
+                "@"
+            } else {
+                ""
+            };
+            if long {
+                ls_format::format_long_from_entry(e, indicator)
+            } else {
+                format!("{}{indicator}", e.name)
+            }
+        })
+        .collect();
 
-    if entries.is_empty() {
-        Ok(ToolResult::success("(empty directory)"))
-    } else {
-        let lines: Vec<&str> = entries.iter().map(|(_, d)| d.as_str()).collect();
-        Ok(ToolResult::success(lines.join("\n")))
-    }
+    Ok(ToolResult::success(lines.join("\n")))
 }

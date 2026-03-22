@@ -176,13 +176,3 @@ pub const DANGEROUS_COMMAND_PATTERNS: &[&str] = &[
     "halt",
     "poweroff",
 ];
-
-/// Shell operators that may indicate command injection.
-pub const SHELL_INJECTION_PATTERNS: &[&str] = &[
-    "$(", "`",   // Command substitution
-    "&&", "||",  // Chaining (allowed in normal use but flagged in sandbox)
-    "|",         // Piping
-    ";",         // Command separator
-    ">",         // Redirect
-    "<",         // Input redirect
-];

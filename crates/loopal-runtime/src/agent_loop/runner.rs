@@ -23,7 +23,9 @@ pub struct AgentLoopRunner {
 impl AgentLoopRunner {
     pub fn new(params: AgentLoopParams) -> Self {
         let tool_ctx = ToolContext {
-            cwd: std::path::PathBuf::from(&params.session.cwd),
+            backend: params.kernel.create_backend(
+                std::path::Path::new(&params.session.cwd),
+            ),
             session_id: params.session.id.clone(),
             shared: params.shared.clone(),
         };

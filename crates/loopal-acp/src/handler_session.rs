@@ -45,7 +45,6 @@ impl AcpHandler {
                 return;
             }
         };
-        kernel.init_sandbox(&cwd);
         if let Err(e) = kernel.start_mcp().await {
             error!(error = %e, "MCP start failed");
         }

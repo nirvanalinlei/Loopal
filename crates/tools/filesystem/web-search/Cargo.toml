@@ -17,4 +17,5 @@ async-trait = { workspace = true }
 reqwest = { workspace = true }
 
 [dev-dependencies]
+loopal-backend = { workspace = true }
 tempfile = "3"

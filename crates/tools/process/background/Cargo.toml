@@ -16,4 +16,5 @@ async-trait = { workspace = true }
 
 [dev-dependencies]
 loopal-tool-bash = { workspace = true }
+loopal-backend = { workspace = true }
 tempfile = "3"

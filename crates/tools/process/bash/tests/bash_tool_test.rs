@@ -3,36 +3,25 @@ use loopal_tool_bash::BashTool;
 use serde_json::json;
 
 fn make_ctx(cwd: &std::path::Path) -> ToolContext {
+    let backend = loopal_backend::LocalBackend::new(
+        cwd.to_path_buf(),
+        None,
+        loopal_backend::ResourceLimits::default(),
+    );
     ToolContext {
-        cwd: cwd.to_path_buf(),
         session_id: "test".into(),
         shared: None,
+        backend,
     }
 }
 
 #[test]
-fn test_bash_name() {
+fn test_bash_metadata() {
     let tool = BashTool;
     assert_eq!(tool.name(), "Bash");
-}
-
-#[test]
-fn test_bash_description() {
-    let tool = BashTool;
-    let desc = tool.description();
-    assert!(!desc.is_empty());
-    assert!(desc.contains("bash"));
-}
-
-#[test]
-fn test_bash_permission() {
-    let tool = BashTool;
+    assert!(tool.description().contains("bash"));
     assert_eq!(tool.permission(), PermissionLevel::Dangerous);
-}
 
-#[test]
-fn test_bash_parameters_schema() {
-    let tool = BashTool;
     let schema = tool.parameters_schema();
     assert_eq!(schema["type"], "object");
     let required = schema["required"].as_array().unwrap();

@@ -3,10 +3,15 @@ use loopal_tool_write::WriteTool;
 use serde_json::json;
 
 fn make_ctx(cwd: &std::path::Path) -> ToolContext {
+    let backend = loopal_backend::LocalBackend::new(
+        cwd.to_path_buf(),
+        None,
+        loopal_backend::ResourceLimits::default(),
+    );
     ToolContext {
-        cwd: cwd.to_path_buf(),
         session_id: "test".into(),
         shared: None,
+        backend,
     }
 }
 
@@ -31,7 +36,6 @@ async fn test_write_omission_in_content_returns_error() {
 
     assert!(result.is_error);
     assert!(result.content.contains("Omission detected"));
-    // File should not have been created
     assert!(!file.exists());
 }
 
@@ -108,9 +112,7 @@ async fn test_write_path_traversal_protection() {
         .unwrap();
 
     assert!(result.is_error);
-    assert!(result.content.contains("path outside working directory"));
-
-    // Verify file was not created outside cwd
+    assert!(result.content.contains("path escapes working directory"));
     assert!(!tmp.path().join("outside.txt").exists());
 }
 

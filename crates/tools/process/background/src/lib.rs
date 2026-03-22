@@ -3,7 +3,6 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, LazyLock, Mutex};
 use tokio::process::Child;
 
-pub mod spawn;
 pub mod task_output;
 pub mod task_stop;
 

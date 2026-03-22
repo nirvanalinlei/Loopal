@@ -1,9 +1,7 @@
 use async_trait::async_trait;
-use loopal_error::LoopalError;
+use loopal_error::{LoopalError, ToolIoError};
 use loopal_tool_api::{truncate_output, PermissionLevel, Tool, ToolContext, ToolResult};
 use serde_json::{json, Value};
-use std::time::Duration;
-use tokio::process::Command;
 
 /// BashTool executes shell commands. OS-level sandbox wrapping is handled
 /// by the SandboxedTool decorator — BashTool itself is a plain executor.
@@ -68,69 +66,43 @@ impl Tool for BashTool {
         let run_in_background = input["run_in_background"].as_bool().unwrap_or(false);
 
         if run_in_background {
-            return loopal_tool_background::spawn::spawn_background(command, &input, ctx).await;
+            let desc = input["description"].as_str().unwrap_or(command);
+            return match ctx.backend.exec_background(command, desc).await {
+                Ok(task_id) => Ok(ToolResult::success(format!(
+                    "Background task started: {task_id}"
+                ))),
+                Err(e) => Ok(ToolResult::error(e.to_string())),
+            };
         }
 
         let timeout_ms = input["timeout"].as_u64().unwrap_or(DEFAULT_TIMEOUT_MS);
-        let result = execute_command(command, &ctx.cwd, timeout_ms).await;
-        format_result(result, timeout_ms)
+        match ctx.backend.exec(command, timeout_ms).await {
+            Ok(output) => Ok(format_exec_result(output)),
+            Err(ToolIoError::Timeout(ms)) => {
+                Err(LoopalError::Tool(loopal_error::ToolError::Timeout(ms)))
+            }
+            Err(e) => Ok(ToolResult::error(e.to_string())),
+        }
     }
 }
 
-async fn execute_command(
-    command: &str,
-    cwd: &std::path::Path,
-    timeout_ms: u64,
-) -> Result<std::process::Output, ExecError> {
-    let mut cmd = Command::new("sh");
-    cmd.arg("-c").arg(command).current_dir(cwd);
-
-    tokio::time::timeout(Duration::from_millis(timeout_ms), cmd.output())
-        .await
-        .map_err(|_| ExecError::Timeout)?
-        .map_err(ExecError::Io)
-}
-
-enum ExecError {
-    Timeout,
-    Io(std::io::Error),
-}
-
-fn format_result(
-    result: Result<std::process::Output, ExecError>,
-    timeout_ms: u64,
-) -> Result<ToolResult, LoopalError> {
-    match result {
-        Ok(output) => {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            let stderr = String::from_utf8_lossy(&output.stderr);
-
-            let mut combined = String::new();
-            if !stdout.is_empty() {
-                combined.push_str(&stdout);
-            }
-            if !stderr.is_empty() {
-                if !combined.is_empty() {
-                    combined.push('\n');
-                }
-                combined.push_str(&stderr);
-            }
-
-            let truncated = truncate_output(&combined, MAX_OUTPUT_LINES, MAX_OUTPUT_BYTES);
-            let is_error = !output.status.success();
-
-            if is_error {
-                let code = output.status.code().unwrap_or(-1);
-                Ok(ToolResult::error(format!("Exit code: {code}\n{truncated}")))
-            } else {
-                Ok(ToolResult::success(truncated))
-            }
+fn format_exec_result(output: loopal_tool_api::backend_types::ExecResult) -> ToolResult {
+    let mut combined = String::new();
+    if !output.stdout.is_empty() {
+        combined.push_str(&output.stdout);
+    }
+    if !output.stderr.is_empty() {
+        if !combined.is_empty() {
+            combined.push('\n');
         }
-        Err(ExecError::Io(e)) => {
-            Ok(ToolResult::error(format!("Failed to execute command: {e}")))
-        }
-        Err(ExecError::Timeout) => Err(LoopalError::Tool(
-            loopal_error::ToolError::Timeout(timeout_ms),
-        )),
+        combined.push_str(&output.stderr);
+    }
+
+    let truncated = truncate_output(&combined, MAX_OUTPUT_LINES, MAX_OUTPUT_BYTES);
+
+    if output.exit_code != 0 {
+        ToolResult::error(format!("Exit code: {}\n{truncated}", output.exit_code))
+    } else {
+        ToolResult::success(truncated)
     }
 }

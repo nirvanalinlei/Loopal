@@ -17,6 +17,7 @@ loopal-provider = { workspace = true }
 loopal-hooks = { workspace = true }
 loopal-mcp = { workspace = true }
 loopal-sandbox = { workspace = true }
+loopal-backend = { workspace = true }
 tokio = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }

@@ -2,10 +2,8 @@ use async_trait::async_trait;
 use loopal_error::LoopalError;
 use loopal_tool_api::{PermissionLevel, Tool, ToolContext, ToolResult};
 use serde_json::{json, Value};
-use std::path::PathBuf;
 
 use loopal_edit_core::omission_detector::detect_omissions;
-use loopal_edit_core::search_replace::{search_replace, SearchReplaceResult};
 
 pub struct EditTool;
 
@@ -72,21 +70,6 @@ impl Tool for EditTool {
             })?;
         let replace_all = input["replace_all"].as_bool().unwrap_or(false);
 
-        let path = resolve_path(file_path, &ctx.cwd);
-
-        // Guard against path traversal for relative paths
-        if !PathBuf::from(file_path).is_absolute()
-            && let Ok(canonical) = path.canonicalize()
-            && !canonical.starts_with(&ctx.cwd) {
-                return Ok(ToolResult::error("path outside working directory"));
-            }
-
-        let content = tokio::fs::read_to_string(&path).await.map_err(|e| {
-            LoopalError::Tool(loopal_error::ToolError::ExecutionFailed(
-                format!("Failed to read {}: {}", path.display(), e),
-            ))
-        })?;
-
         // Check new_string for LLM omission patterns before applying
         let omissions = detect_omissions(new_string);
         if !omissions.is_empty() {
@@ -96,36 +79,13 @@ impl Tool for EditTool {
             )));
         }
 
-        match search_replace(&content, old_string, new_string, replace_all) {
-            SearchReplaceResult::Ok(new_content) => {
-                tokio::fs::write(&path, &new_content).await.map_err(|e| {
-                    LoopalError::Tool(loopal_error::ToolError::ExecutionFailed(
-                        format!("Failed to write {}: {}", path.display(), e),
-                    ))
-                })?;
-                Ok(ToolResult::success(format!(
-                    "Successfully edited {}",
-                    path.display()
-                )))
-            }
-            SearchReplaceResult::NotFound => Ok(ToolResult::error(format!(
-                "old_string not found in {}",
-                path.display()
+        // Backend handles: path resolution, traversal check, read, search_replace, atomic write
+        match ctx.backend.edit(file_path, old_string, new_string, replace_all).await {
+            Ok(_result) => Ok(ToolResult::success(format!(
+                "Successfully edited {}",
+                file_path
             ))),
-            SearchReplaceResult::MultipleMatches(count) => Ok(ToolResult::error(format!(
-                "old_string found {} times in {}. Use replace_all=true to replace all, or provide more context to make it unique.",
-                count,
-                path.display()
-            ))),
+            Err(e) => Ok(ToolResult::error(e.to_string())),
         }
-    }
-}
-
-fn resolve_path(file_path: &str, cwd: &std::path::Path) -> PathBuf {
-    let p = PathBuf::from(file_path);
-    if p.is_absolute() {
-        p
-    } else {
-        cwd.join(p)
     }
 }

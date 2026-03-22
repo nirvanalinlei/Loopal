@@ -3,10 +3,15 @@ use loopal_tool_read::ReadTool;
 use serde_json::json;
 
 fn make_ctx(cwd: &std::path::Path) -> ToolContext {
+    let backend = loopal_backend::LocalBackend::new(
+        cwd.to_path_buf(),
+        None,
+        loopal_backend::ResourceLimits::default(),
+    );
     ToolContext {
-        cwd: cwd.to_path_buf(),
         session_id: "test".into(),
         shared: None,
+        backend,
     }
 }
 
@@ -20,12 +25,7 @@ async fn test_read_existing_file_returns_content() {
     let ctx = make_ctx(tmp.path());
 
     let result = tool
-        .execute(
-            json!({
-                "file_path": file.to_str().unwrap()
-            }),
-            &ctx,
-        )
+        .execute(json!({"file_path": file.to_str().unwrap()}), &ctx)
         .await
         .unwrap();
 
@@ -46,15 +46,13 @@ async fn test_read_nonexistent_file_returns_error() {
     let ctx = make_ctx(tmp.path());
 
     let result = tool
-        .execute(
-            json!({
-                "file_path": file.to_str().unwrap()
-            }),
-            &ctx,
-        )
-        .await;
+        .execute(json!({"file_path": file.to_str().unwrap()}), &ctx)
+        .await
+        .unwrap();
 
-    assert!(result.is_err());
+    // Backend returns ToolIoError::NotFound → ToolResult::error
+    assert!(result.is_error);
+    assert!(result.content.contains("not found"));
 }
 
 #[tokio::test]
@@ -71,13 +69,7 @@ async fn test_read_with_line_limit() {
     let ctx = make_ctx(tmp.path());
 
     let result = tool
-        .execute(
-            json!({
-                "file_path": file.to_str().unwrap(),
-                "limit": 3
-            }),
-            &ctx,
-        )
+        .execute(json!({"file_path": file.to_str().unwrap(), "limit": 3}), &ctx)
         .await
         .unwrap();
 
@@ -105,11 +97,7 @@ async fn test_read_with_offset() {
 
     let result = tool
         .execute(
-            json!({
-                "file_path": file.to_str().unwrap(),
-                "offset": 3,
-                "limit": 2
-            }),
+            json!({"file_path": file.to_str().unwrap(), "offset": 3, "limit": 2}),
             &ctx,
         )
         .await
@@ -165,10 +153,7 @@ async fn test_read_empty_file() {
     let ctx = make_ctx(tmp.path());
 
     let result = tool
-        .execute(
-            json!({"file_path": file.to_str().unwrap()}),
-            &ctx,
-        )
+        .execute(json!({"file_path": file.to_str().unwrap()}), &ctx)
         .await
         .unwrap();
 

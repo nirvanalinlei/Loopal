@@ -20,8 +20,8 @@ fn test_agent_loop_runner_construction() {
 fn test_tool_ctx_matches_session() {
     let (runner, _rx) = make_runner();
     assert_eq!(
-        runner.tool_ctx.cwd,
-        std::path::PathBuf::from("/tmp")
+        runner.tool_ctx.backend.cwd(),
+        std::path::Path::new("/tmp").canonicalize().unwrap_or_else(|_| "/tmp".into())
     );
     assert_eq!(runner.tool_ctx.session_id, "test-session-001");
 }

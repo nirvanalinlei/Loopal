@@ -34,8 +34,11 @@ async fn make_ctx(agent_name: &str) -> (Arc<AgentShared>, ToolContext) {
     });
 
     let shared_any: Arc<dyn std::any::Any + Send + Sync> = Arc::new(shared.clone());
+    let backend = loopal_backend::LocalBackend::new(
+        std::env::temp_dir(), None, loopal_backend::ResourceLimits::default(),
+    );
     let ctx = ToolContext {
-        cwd: std::env::temp_dir(),
+        backend,
         session_id: "test".to_string(),
         shared: Some(shared_any),
     };

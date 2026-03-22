@@ -13,7 +13,9 @@ async fn test_execute_tools_bypass_mode() {
     // Create a temp file for Read tool
     let tmp = std::env::temp_dir().join("loopal_exec_tools_test.txt");
     std::fs::write(&tmp, "hello from test").unwrap();
-    runner.tool_ctx.cwd = std::env::temp_dir();
+    runner.tool_ctx.backend = loopal_backend::LocalBackend::new(
+        std::env::temp_dir(), None, loopal_backend::ResourceLimits::default(),
+    );
 
     let tool_uses = vec![(
         "tc-1".to_string(),
@@ -96,7 +98,9 @@ async fn test_execute_tools_read_allowed_write_denied_in_supervised() {
         std::process::id()
     ));
     std::fs::write(&tmp, "mixed test").unwrap();
-    runner.tool_ctx.cwd = std::env::temp_dir();
+    runner.tool_ctx.backend = loopal_backend::LocalBackend::new(
+        std::env::temp_dir(), None, loopal_backend::ResourceLimits::default(),
+    );
 
     let tool_uses = vec![
         (

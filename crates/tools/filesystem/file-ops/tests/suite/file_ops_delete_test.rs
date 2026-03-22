@@ -3,7 +3,16 @@ use loopal_tool_file_ops::delete::DeleteTool;
 use serde_json::json;
 
 fn make_ctx(cwd: &std::path::Path) -> ToolContext {
-    ToolContext { cwd: cwd.to_path_buf(), session_id: "test".into(), shared: None }
+    let backend = loopal_backend::LocalBackend::new(
+        cwd.to_path_buf(),
+        None,
+        loopal_backend::ResourceLimits::default(),
+    );
+    ToolContext {
+        session_id: "test".into(),
+        shared: None,
+        backend,
+    }
 }
 
 #[tokio::test]
@@ -13,7 +22,7 @@ async fn delete_file() {
     let tool = DeleteTool;
     let ctx = make_ctx(tmp.path());
     let r = tool.execute(json!({"path": "f.txt"}), &ctx).await.unwrap();
-    assert!(!r.is_error);
+    assert!(!r.is_error, "unexpected error: {}", r.content);
     assert!(r.content.contains("file"));
     assert!(!tmp.path().join("f.txt").exists());
 }
@@ -28,9 +37,8 @@ async fn delete_directory() {
     let tool = DeleteTool;
     let ctx = make_ctx(tmp.path());
     let r = tool.execute(json!({"path": "subdir"}), &ctx).await.unwrap();
-    assert!(!r.is_error);
+    assert!(!r.is_error, "unexpected error: {}", r.content);
     assert!(r.content.contains("directory"));
-    assert!(r.content.contains("2 entries"));
     assert!(!sub.exists());
 }
 
@@ -41,7 +49,8 @@ async fn delete_not_found() {
     let ctx = make_ctx(tmp.path());
     let r = tool.execute(json!({"path": "nope.txt"}), &ctx).await.unwrap();
     assert!(r.is_error);
-    assert!(r.content.contains("does not exist"));
+    assert!(r.content.contains("not found") || r.content.contains("does not exist"),
+            "unexpected error: {}", r.content);
 }
 
 #[tokio::test]

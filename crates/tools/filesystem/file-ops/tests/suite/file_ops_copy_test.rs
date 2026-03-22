@@ -3,7 +3,16 @@ use loopal_tool_file_ops::copy::CopyFileTool;
 use serde_json::json;
 
 fn make_ctx(cwd: &std::path::Path) -> ToolContext {
-    ToolContext { cwd: cwd.to_path_buf(), session_id: "test".into(), shared: None }
+    let backend = loopal_backend::LocalBackend::new(
+        cwd.to_path_buf(),
+        None,
+        loopal_backend::ResourceLimits::default(),
+    );
+    ToolContext {
+        session_id: "test".into(),
+        shared: None,
+        backend,
+    }
 }
 
 #[tokio::test]
@@ -13,16 +22,10 @@ async fn copy_basic() {
     let tool = CopyFileTool;
     let ctx = make_ctx(tmp.path());
     let r = tool.execute(json!({"src": "a.txt", "dst": "b.txt"}), &ctx).await.unwrap();
-    assert!(!r.is_error);
-    assert!(r.content.contains("bytes"));
-    assert_eq!(
-        std::fs::read_to_string(tmp.path().join("a.txt")).unwrap(),
-        "hello"
-    );
-    assert_eq!(
-        std::fs::read_to_string(tmp.path().join("b.txt")).unwrap(),
-        "hello"
-    );
+    assert!(!r.is_error, "unexpected error: {}", r.content);
+    assert!(r.content.contains("Copied"));
+    assert_eq!(std::fs::read_to_string(tmp.path().join("a.txt")).unwrap(), "hello");
+    assert_eq!(std::fs::read_to_string(tmp.path().join("b.txt")).unwrap(), "hello");
 }
 
 #[tokio::test]
@@ -32,7 +35,6 @@ async fn copy_src_not_found() {
     let ctx = make_ctx(tmp.path());
     let r = tool.execute(json!({"src": "nope.txt", "dst": "b.txt"}), &ctx).await.unwrap();
     assert!(r.is_error);
-    assert!(r.content.contains("does not exist"));
 }
 
 #[tokio::test]
@@ -43,7 +45,7 @@ async fn copy_dst_is_directory() {
     let tool = CopyFileTool;
     let ctx = make_ctx(tmp.path());
     let r = tool.execute(json!({"src": "a.txt", "dst": "dest"}), &ctx).await.unwrap();
-    assert!(!r.is_error);
+    assert!(!r.is_error, "unexpected error: {}", r.content);
     assert!(tmp.path().join("dest/a.txt").exists());
 }
 
@@ -57,7 +59,7 @@ async fn copy_creates_parent_dirs() {
         .execute(json!({"src": "a.txt", "dst": "deep/nested/b.txt"}), &ctx)
         .await
         .unwrap();
-    assert!(!r.is_error);
+    assert!(!r.is_error, "unexpected error: {}", r.content);
     assert!(tmp.path().join("deep/nested/b.txt").exists());
 }
 

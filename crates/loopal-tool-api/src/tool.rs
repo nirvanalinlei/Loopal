@@ -1,10 +1,11 @@
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::fmt;
 use std::sync::Arc;
 
 use loopal_error::LoopalError;
 
+use crate::backend::Backend;
 use crate::permission::PermissionLevel;
 
 #[async_trait]
@@ -27,14 +28,35 @@ pub trait Tool: Send + Sync {
     ) -> std::result::Result<ToolResult, LoopalError>;
 }
 
-#[derive(Debug, Clone)]
+/// Execution context passed to every `Tool::execute` invocation.
 pub struct ToolContext {
-    /// Current working directory
-    pub cwd: PathBuf,
-    /// Session ID
+    /// I/O backend for all filesystem, process, and network operations.
+    /// Use `backend.cwd()` to get the current working directory.
+    pub backend: Arc<dyn Backend>,
+    /// Session ID.
     pub session_id: String,
     /// Opaque shared state passed to tools — tools downcast via `Any`.
     pub shared: Option<Arc<dyn std::any::Any + Send + Sync>>,
+}
+
+impl Clone for ToolContext {
+    fn clone(&self) -> Self {
+        Self {
+            backend: self.backend.clone(),
+            session_id: self.session_id.clone(),
+            shared: self.shared.clone(),
+        }
+    }
+}
+
+impl fmt::Debug for ToolContext {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("ToolContext")
+            .field("cwd", &self.backend.cwd())
+            .field("session_id", &self.session_id)
+            .field("shared", &self.shared.is_some())
+            .finish()
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

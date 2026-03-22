@@ -26,6 +26,9 @@ pub enum LoopalError {
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
 
+    #[error("Backend IO: {0}")]
+    BackendIo(#[from] crate::io_error::ToolIoError),
+
     #[error("{0}")]
     Other(String),
 }

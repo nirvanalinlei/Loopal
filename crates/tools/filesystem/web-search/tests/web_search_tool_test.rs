@@ -3,8 +3,13 @@ use loopal_tool_web_search::WebSearchTool;
 use serde_json::json;
 
 fn make_ctx() -> ToolContext {
+    let backend = loopal_backend::LocalBackend::new(
+        std::path::PathBuf::from("/tmp"),
+        None,
+        loopal_backend::ResourceLimits::default(),
+    );
     ToolContext {
-        cwd: std::path::PathBuf::from("/tmp"),
+        backend,
         session_id: "test".into(),
         shared: None,
     }

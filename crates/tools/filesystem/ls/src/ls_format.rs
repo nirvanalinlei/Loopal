@@ -1,81 +1,55 @@
+use loopal_tool_api::{FileInfo, LsEntry};
 use std::time::SystemTime;
 
-/// Format a long-mode directory entry: `drwxr-xr-x    4.0K  2024-03-20 10:30  name/`
-pub fn format_long_entry(
-    name: &str,
-    indicator: &str,
-    md: Option<&std::fs::Metadata>,
-) -> String {
-    let Some(md) = md else {
-        return format!("??????????  ?????  ????-??-?? ??:??  {name}{indicator}");
-    };
-    let perms = format_permissions(md);
-    let size = format_size(md.len());
-    let mtime = md
-        .modified()
-        .ok()
-        .map(format_time)
-        .unwrap_or_else(|| "????-??-?? ??:??".into());
-    format!("{perms}  {size:>6}  {mtime}  {name}{indicator}")
-}
-
-/// Format stat-like output for a single file or directory.
-pub fn format_stat(path: &std::path::Path, md: &std::fs::Metadata) -> String {
-    let file_type = if md.is_dir() {
-        "directory"
-    } else if md.file_type().is_symlink() {
-        "symbolic link"
-    } else {
-        "regular file"
-    };
-    let size = md.len();
-    let perms = format_permissions(md);
-    let mtime = md
-        .modified()
-        .ok()
-        .map(format_time)
-        .unwrap_or_else(|| "unknown".into());
-    format!(
-        "File: {}\nType: {}\nSize: {} bytes ({})\nPermissions: {}\nModified: {}",
-        path.display(),
-        file_type,
-        size,
-        format_size(size),
-        perms,
-        mtime
-    )
-}
-
-/// Format Unix permission bits as `drwxr-xr-x`.
-pub fn format_permissions(md: &std::fs::Metadata) -> String {
-    let prefix = if md.is_dir() {
+/// Format a long-mode line from an `LsEntry`.
+pub fn format_long_from_entry(entry: &LsEntry, indicator: &str) -> String {
+    let prefix = if entry.is_dir {
         'd'
-    } else if md.file_type().is_symlink() {
+    } else if entry.is_symlink {
         'l'
     } else {
         '-'
     };
+    let perms = format_permission_bits(prefix, entry.permissions);
+    let size = format_size(entry.size);
+    let mtime = entry
+        .modified
+        .map(format_epoch)
+        .unwrap_or_else(|| "????-??-?? ??:??".into());
+    format!("{perms}  {size:>6}  {mtime}  {}{indicator}", entry.name)
+}
 
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let mode = md.permissions().mode();
-        let mut s = String::with_capacity(10);
-        s.push(prefix);
-        for shift in (0..3).rev() {
-            let bits = (mode >> (shift * 3)) & 7;
-            s.push(if bits & 4 != 0 { 'r' } else { '-' });
-            s.push(if bits & 2 != 0 { 'w' } else { '-' });
-            s.push(if bits & 1 != 0 { 'x' } else { '-' });
-        }
-        s
-    }
+/// Format stat-like output from `FileInfo`.
+pub fn format_stat_from_info(path: &std::path::Path, info: &FileInfo) -> String {
+    let file_type = if info.is_dir { "directory" } else { "regular file" };
+    let mtime = info
+        .modified
+        .map(format_epoch)
+        .unwrap_or_else(|| "unknown".into());
+    format!(
+        "File: {}\nType: {}\nSize: {} bytes ({})\nModified: {}",
+        path.display(),
+        file_type,
+        info.size,
+        format_size(info.size),
+        mtime,
+    )
+}
 
-    #[cfg(not(unix))]
-    {
-        let ro = if md.permissions().readonly() { "r--" } else { "rw-" };
-        format!("{prefix}{ro}{ro}{ro}")
+/// Format Unix permission bits as `drwxr-xr-x`.
+fn format_permission_bits(prefix: char, mode: Option<u32>) -> String {
+    let Some(mode) = mode else {
+        return format!("{prefix}---------");
+    };
+    let mut s = String::with_capacity(10);
+    s.push(prefix);
+    for shift in (0..3).rev() {
+        let bits = (mode >> (shift * 3)) & 7;
+        s.push(if bits & 4 != 0 { 'r' } else { '-' });
+        s.push(if bits & 2 != 0 { 'w' } else { '-' });
+        s.push(if bits & 1 != 0 { 'x' } else { '-' });
     }
+    s
 }
 
 /// Human-readable file size: `123B`, `1.2K`, `3.4M`, `1.0G`.
@@ -97,7 +71,12 @@ pub fn format_time(time: SystemTime) -> String {
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap_or_default()
         .as_secs();
-    let (y, m, d, h, min) = epoch_to_datetime(secs);
+    format_epoch(secs)
+}
+
+/// Format unix epoch seconds as `YYYY-MM-DD HH:MM`.
+fn format_epoch(epoch: u64) -> String {
+    let (y, m, d, h, min) = epoch_to_datetime(epoch);
     format!("{y:04}-{m:02}-{d:02} {h:02}:{min:02}")
 }
 

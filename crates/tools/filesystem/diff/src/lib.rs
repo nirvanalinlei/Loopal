@@ -1,8 +1,7 @@
 use async_trait::async_trait;
 use loopal_error::LoopalError;
-use loopal_tool_api::{PermissionLevel, Tool, ToolContext, ToolResult};
+use loopal_tool_api::{Backend, PermissionLevel, Tool, ToolContext, ToolResult};
 use serde_json::{json, Value};
-use std::path::PathBuf;
 
 use loopal_edit_core::diff::{compute_diff, format_unified, DiffOp};
 
@@ -55,12 +54,12 @@ impl Tool for DiffTool {
                     "path_b is required when path_a is given".into(),
                 ))
             })?;
-            return diff_two_files(path_a, path_b, ctx).await;
+            return diff_two_files(path_a, path_b, &*ctx.backend).await;
         }
 
         if let Some(path) = input["path"].as_str() {
             let git_ref = input["ref"].as_str().unwrap_or("HEAD");
-            return diff_git(path, git_ref, ctx).await;
+            return diff_git(path, git_ref, &*ctx.backend).await;
         }
 
         Ok(ToolResult::error(
@@ -70,49 +69,63 @@ impl Tool for DiffTool {
 }
 
 async fn diff_two_files(
-    a_raw: &str, b_raw: &str, ctx: &ToolContext,
+    a_raw: &str,
+    b_raw: &str,
+    backend: &dyn Backend,
 ) -> Result<ToolResult, LoopalError> {
-    let a_path = resolve(a_raw, &ctx.cwd);
-    let b_path = resolve(b_raw, &ctx.cwd);
-    let a_text = read_file(&a_path).await?;
-    let b_text = read_file(&b_path).await?;
-    diff_texts(&a_text, &b_text, &a_path.display().to_string(), &b_path.display().to_string())
+    let a_text = match backend.read_raw(a_raw).await {
+        Ok(s) => s,
+        Err(e) => return Ok(ToolResult::error(e.to_string())),
+    };
+    let b_text = match backend.read_raw(b_raw).await {
+        Ok(s) => s,
+        Err(e) => return Ok(ToolResult::error(e.to_string())),
+    };
+    diff_texts(&a_text, &b_text, a_raw, b_raw)
 }
 
 async fn diff_git(
-    path_raw: &str, git_ref: &str, ctx: &ToolContext,
+    path_raw: &str,
+    git_ref: &str,
+    backend: &dyn Backend,
 ) -> Result<ToolResult, LoopalError> {
-    let file_path = resolve(path_raw, &ctx.cwd);
+    let file_path = match backend.resolve_path(path_raw, false) {
+        Ok(p) => p,
+        Err(e) => return Ok(ToolResult::error(e.to_string())),
+    };
+    let cwd = backend.cwd();
     let rel = file_path
-        .strip_prefix(&ctx.cwd)
+        .strip_prefix(cwd)
         .unwrap_or(&file_path)
         .to_string_lossy();
     let ref_spec = format!("{git_ref}:{rel}");
+    let cmd = format!("git show {ref_spec}");
 
-    let output = tokio::process::Command::new("git")
-        .args(["show", &ref_spec])
-        .current_dir(&ctx.cwd)
-        .output()
-        .await
-        .map_err(|e| {
-            LoopalError::Tool(loopal_error::ToolError::ExecutionFailed(format!(
-                "failed to run git show: {e}"
-            )))
-        })?;
+    let result = match backend.exec(&cmd, 30_000).await {
+        Ok(r) => r,
+        Err(e) => return Ok(ToolResult::error(format!("git show failed: {e}"))),
+    };
 
-    if !output.status.success() {
-        let msg = String::from_utf8_lossy(&output.stderr);
-        return Ok(ToolResult::error(format!("git show failed: {msg}")));
+    if result.exit_code != 0 {
+        return Ok(ToolResult::error(format!(
+            "git show failed: {}",
+            result.stderr
+        )));
     }
 
-    let old_text = String::from_utf8_lossy(&output.stdout).to_string();
-    let new_text = read_file(&file_path).await?;
-    let old_name = ref_spec.to_string();
-    diff_texts(&old_text, &new_text, &old_name, &file_path.display().to_string())
+    let old_text = result.stdout;
+    let new_text = match backend.read_raw(path_raw).await {
+        Ok(s) => s,
+        Err(e) => return Ok(ToolResult::error(e.to_string())),
+    };
+    diff_texts(&old_text, &new_text, &ref_spec, &file_path.display().to_string())
 }
 
 fn diff_texts(
-    old: &str, new: &str, old_name: &str, new_name: &str,
+    old: &str,
+    new: &str,
+    old_name: &str,
+    new_name: &str,
 ) -> Result<ToolResult, LoopalError> {
     let old_lines: Vec<&str> = old.lines().collect();
     let new_lines: Vec<&str> = new.lines().collect();
@@ -125,18 +138,7 @@ fn diff_texts(
     if ops.iter().all(|op| matches!(op, DiffOp::Equal(_))) {
         return Ok(ToolResult::success("No differences"));
     }
-    Ok(ToolResult::success(format_unified(old_name, new_name, &ops, 3)))
-}
-
-fn resolve(raw: &str, cwd: &std::path::Path) -> PathBuf {
-    let p = PathBuf::from(raw);
-    if p.is_absolute() { p } else { cwd.join(p) }
-}
-
-async fn read_file(path: &std::path::Path) -> Result<String, LoopalError> {
-    tokio::fs::read_to_string(path).await.map_err(|e| {
-        LoopalError::Tool(loopal_error::ToolError::ExecutionFailed(format!(
-            "failed to read {}: {e}", path.display()
-        )))
-    })
+    Ok(ToolResult::success(format_unified(
+        old_name, new_name, &ops, 3,
+    )))
 }

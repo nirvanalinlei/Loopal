@@ -3,7 +3,16 @@ use loopal_tool_apply_patch::ApplyPatchTool;
 use serde_json::json;
 
 fn make_ctx(cwd: &std::path::Path) -> ToolContext {
-    ToolContext { cwd: cwd.to_path_buf(), session_id: "test".into(), shared: None }
+    let backend = loopal_backend::LocalBackend::new(
+        cwd.to_path_buf(),
+        None,
+        loopal_backend::ResourceLimits::default(),
+    );
+    ToolContext {
+        session_id: "test".into(),
+        shared: None,
+        backend,
+    }
 }
 
 #[tokio::test]
@@ -47,7 +56,12 @@ async fn test_path_traversal_rejected() {
     let patch = "*** Add File: ../escape.txt\n+evil\n";
     let r = tool.execute(json!({"patch": patch}), &ctx).await.unwrap();
     assert!(r.is_error);
-    assert!(r.content.contains("outside working directory"));
+    assert!(
+        r.content.contains("path escapes working directory")
+            || r.content.contains("write to path outside"),
+        "unexpected error message: {}",
+        r.content
+    );
 }
 
 #[tokio::test]

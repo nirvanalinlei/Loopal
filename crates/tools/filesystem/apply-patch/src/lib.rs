@@ -46,51 +46,43 @@ impl Tool for ApplyPatchTool {
             return Ok(ToolResult::error("patch contains no file operations"));
         }
 
-        // Path traversal protection
-        let cwd_canon = ctx.cwd.canonicalize().unwrap_or_else(|_| ctx.cwd.clone());
+        // Path validation via backend (write mode)
         for op in &ops {
             let rel = op.path();
-            let full = if rel.is_absolute() { rel.clone() } else { ctx.cwd.join(rel) };
-            let check = if full.exists() {
-                full.canonicalize().ok()
-            } else {
-                full.parent().and_then(|p| p.canonicalize().ok())
-            };
-            if let Some(c) = check
-                && !c.starts_with(&cwd_canon)
-            {
-                return Ok(ToolResult::error(format!(
-                    "path outside working directory: {}",
-                    rel.display()
-                )));
+            let path_str = rel.to_string_lossy();
+            if let Err(e) = ctx.backend.resolve_path(&path_str, true) {
+                return Ok(ToolResult::error(e.to_string()));
             }
         }
 
-        // Apply in memory
-        let writes = apply_file_ops(&ops, &ctx.cwd, |p| std::fs::read_to_string(p))
+        // Apply in memory — read files using std::fs on backend-resolved paths
+        let cwd = ctx.backend.cwd().to_path_buf();
+        let writes = apply_file_ops(&ops, &cwd, |p| std::fs::read_to_string(p))
             .map_err(|e| tool_input(&e.to_string()))?;
 
-        // Atomic write phase
+        // Write phase via backend
         let (mut created, mut updated, mut deleted) = (0u32, 0u32, 0u32);
         for w in &writes {
+            let path_str = w.path.to_string_lossy();
             match &w.content {
                 Some(content) => {
-                    if let Some(parent) = w.path.parent() {
-                        tokio::fs::create_dir_all(parent).await.map_err(|e| {
-                            tool_exec(&format!("mkdir: {e}"))
-                        })?;
-                    }
                     let existed = w.path.exists();
-                    tokio::fs::write(&w.path, content).await.map_err(|e| {
-                        tool_exec(&format!("write {}: {e}", w.path.display()))
-                    })?;
-                    if existed { updated += 1; } else { created += 1; }
+                    match ctx.backend.write(&path_str, content).await {
+                        Ok(_) => {
+                            if existed { updated += 1; } else { created += 1; }
+                        }
+                        Err(e) => return Ok(ToolResult::error(
+                            format!("write {}: {e}", w.path.display()),
+                        )),
+                    }
                 }
                 None => {
-                    tokio::fs::remove_file(&w.path).await.map_err(|e| {
-                        tool_exec(&format!("delete {}: {e}", w.path.display()))
-                    })?;
-                    deleted += 1;
+                    match ctx.backend.remove(&path_str).await {
+                        Ok(()) => { deleted += 1; }
+                        Err(e) => return Ok(ToolResult::error(
+                            format!("delete {}: {e}", w.path.display()),
+                        )),
+                    }
                 }
             }
         }
@@ -105,8 +97,4 @@ impl Tool for ApplyPatchTool {
 
 fn tool_input(msg: &str) -> LoopalError {
     LoopalError::Tool(loopal_error::ToolError::InvalidInput(msg.into()))
-}
-
-fn tool_exec(msg: &str) -> LoopalError {
-    LoopalError::Tool(loopal_error::ToolError::ExecutionFailed(msg.into()))
 }

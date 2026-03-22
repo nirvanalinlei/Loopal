@@ -2,7 +2,6 @@ use async_trait::async_trait;
 use loopal_error::LoopalError;
 use loopal_tool_api::{PermissionLevel, Tool, ToolContext, ToolResult};
 use serde_json::{json, Value};
-use std::path::PathBuf;
 
 use loopal_edit_core::omission_detector::detect_omissions;
 
@@ -55,28 +54,6 @@ impl Tool for WriteTool {
                 ))
             })?;
 
-        let path = resolve_path(file_path, &ctx.cwd);
-
-        // Guard against path traversal for relative paths
-        if !PathBuf::from(file_path).is_absolute() {
-            // For new files, canonicalize the parent directory
-            let check_path = if path.exists() {
-                path.canonicalize().ok()
-            } else {
-                path.parent().and_then(|p| {
-                    if p.exists() {
-                        p.canonicalize().ok()
-                    } else {
-                        None
-                    }
-                })
-            };
-            if let Some(canonical) = check_path
-                && !canonical.starts_with(&ctx.cwd) {
-                    return Ok(ToolResult::error("path outside working directory"));
-                }
-        }
-
         // Check content for LLM omission patterns before writing
         let omissions = detect_omissions(content);
         if !omissions.is_empty() {
@@ -86,34 +63,13 @@ impl Tool for WriteTool {
             )));
         }
 
-        if let Some(parent) = path.parent() {
-            tokio::fs::create_dir_all(parent).await.map_err(|e| {
-                LoopalError::Tool(loopal_error::ToolError::ExecutionFailed(
-                    format!("Failed to create directories: {}", e),
-                ))
-            })?;
+        // Backend handles: path resolution, traversal check, mkdir, atomic write
+        match ctx.backend.write(file_path, content).await {
+            Ok(result) => Ok(ToolResult::success(format!(
+                "Successfully wrote {} bytes to {}",
+                result.bytes_written, file_path
+            ))),
+            Err(e) => Ok(ToolResult::error(e.to_string())),
         }
-
-        tokio::fs::write(&path, content).await.map_err(|e| {
-            LoopalError::Tool(loopal_error::ToolError::ExecutionFailed(
-                format!("Failed to write {}: {}", path.display(), e),
-            ))
-        })?;
-
-        let bytes = content.len();
-        Ok(ToolResult::success(format!(
-            "Successfully wrote {} bytes to {}",
-            bytes,
-            path.display()
-        )))
-    }
-}
-
-fn resolve_path(file_path: &str, cwd: &std::path::Path) -> PathBuf {
-    let p = PathBuf::from(file_path);
-    if p.is_absolute() {
-        p
-    } else {
-        cwd.join(p)
     }
 }

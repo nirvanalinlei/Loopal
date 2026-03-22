@@ -13,8 +13,13 @@ fn temp_file(name: &str, content: &str) -> (std::path::PathBuf, ToolContext) {
     let tmp_dir = std::env::temp_dir();
     let path = tmp_dir.join(name);
     std::fs::write(&path, content).unwrap();
+    let backend = loopal_backend::LocalBackend::new(
+        tmp_dir.clone(),
+        None,
+        loopal_backend::ResourceLimits::default(),
+    );
     let ctx = ToolContext {
-        cwd: tmp_dir,
+        backend,
         session_id: format!("test-{name}"),
         shared: None,
     };
@@ -29,7 +34,6 @@ async fn test_passing_pre_hook() {
         tool_filter: None,
         timeout_ms: 5000,
     }]);
-
     let (path, ctx) = temp_file("tool_pre_hook_pass.txt", "pre-hook pass content");
     let result = execute_tool(
         &kernel, "Read",
@@ -37,7 +41,6 @@ async fn test_passing_pre_hook() {
         &ctx, &loopal_runtime::mode::AgentMode::Act,
     ).await;
     let _ = std::fs::remove_file(&path);
-
     let result = result.expect("passing pre-hook should succeed");
     assert!(!result.is_error);
     assert!(result.content.contains("pre-hook pass content"));
@@ -51,7 +54,6 @@ async fn test_failing_pre_hook() {
         tool_filter: None,
         timeout_ms: 5000,
     }]);
-
     let (path, ctx) = temp_file("tool_pre_hook_fail.txt", "should not read this");
     let result = execute_tool(
         &kernel, "Read",
@@ -59,7 +61,6 @@ async fn test_failing_pre_hook() {
         &ctx, &loopal_runtime::mode::AgentMode::Act,
     ).await;
     let _ = std::fs::remove_file(&path);
-
     let result = result.expect("failing pre-hook should return Ok(error)");
     assert!(result.is_error);
     assert!(result.content.contains("Pre-hook rejected"));
@@ -73,7 +74,6 @@ async fn test_post_hook_failure_ignored() {
         tool_filter: None,
         timeout_ms: 5000,
     }]);
-
     let (path, ctx) = temp_file("tool_post_hook_fail.txt", "post hook test content");
     let result = execute_tool(
         &kernel, "Read",
@@ -81,7 +81,6 @@ async fn test_post_hook_failure_ignored() {
         &ctx, &loopal_runtime::mode::AgentMode::Act,
     ).await;
     let _ = std::fs::remove_file(&path);
-
     let result = result.expect("post-hook failure should not prevent result");
     assert!(!result.is_error);
     assert!(result.content.contains("post hook test content"));
@@ -95,7 +94,6 @@ async fn test_filtered_pre_hook_not_matching() {
         tool_filter: Some(vec!["Bash".to_string()]),
         timeout_ms: 5000,
     }]);
-
     let (path, ctx) = temp_file("tool_filtered_hook.txt", "filtered hook content");
     let result = execute_tool(
         &kernel, "Read",
@@ -103,7 +101,6 @@ async fn test_filtered_pre_hook_not_matching() {
         &ctx, &loopal_runtime::mode::AgentMode::Act,
     ).await;
     let _ = std::fs::remove_file(&path);
-
     let result = result.expect("filtered hook should not block unmatched tool");
     assert!(!result.is_error);
 }
@@ -124,7 +121,6 @@ async fn test_both_pre_and_post_hooks() {
             timeout_ms: 5000,
         },
     ]);
-
     let (path, ctx) = temp_file("tool_both_hooks.txt", "both hooks content");
     let result = execute_tool(
         &kernel, "Read",
@@ -132,7 +128,6 @@ async fn test_both_pre_and_post_hooks() {
         &ctx, &loopal_runtime::mode::AgentMode::Act,
     ).await;
     let _ = std::fs::remove_file(&path);
-
     let result = result.expect("both hooks passing should allow execution");
     assert!(!result.is_error);
     assert!(result.content.contains("both hooks content"));

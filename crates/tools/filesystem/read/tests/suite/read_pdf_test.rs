@@ -4,10 +4,15 @@ use loopal_tool_read::read_pdf::parse_page_range;
 use serde_json::json;
 
 fn make_ctx(cwd: &std::path::Path) -> ToolContext {
+    let backend = loopal_backend::LocalBackend::new(
+        cwd.to_path_buf(),
+        None,
+        loopal_backend::ResourceLimits::default(),
+    );
     ToolContext {
-        cwd: cwd.to_path_buf(),
         session_id: "test".into(),
         shared: None,
+        backend,
     }
 }
 
@@ -107,10 +112,7 @@ async fn test_read_pages_on_non_pdf_returns_error() {
 
     let result = tool
         .execute(
-            json!({
-                "file_path": file.to_str().unwrap(),
-                "pages": "1-3"
-            }),
+            json!({"file_path": file.to_str().unwrap(), "pages": "1-3"}),
             &ctx,
         )
         .await
@@ -131,12 +133,7 @@ async fn test_read_pdf_extension_detected() {
     let ctx = make_ctx(tmp.path());
 
     let result = tool
-        .execute(
-            json!({
-                "file_path": file.to_str().unwrap()
-            }),
-            &ctx,
-        )
+        .execute(json!({"file_path": file.to_str().unwrap()}), &ctx)
         .await
         .unwrap();
 

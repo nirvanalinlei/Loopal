@@ -1,5 +1,18 @@
-use loopal_tool_api::{Tool, PermissionLevel};
+use loopal_tool_api::{Tool, PermissionLevel, ToolContext};
 use loopal_tool_fetch::FetchTool;
+
+fn make_ctx() -> ToolContext {
+    let backend = loopal_backend::LocalBackend::new(
+        std::env::temp_dir(),
+        None,
+        loopal_backend::ResourceLimits::default(),
+    );
+    ToolContext {
+        backend,
+        session_id: "t".into(),
+        shared: None,
+    }
+}
 
 #[test]
 fn test_fetch_name() {
@@ -21,18 +34,14 @@ fn test_fetch_schema_requires_url() {
 
 #[tokio::test]
 async fn test_fetch_missing_url_returns_error() {
-    let ctx = loopal_tool_api::ToolContext {
-        cwd: std::env::temp_dir(), session_id: "t".into(), shared: None,
-    };
+    let ctx = make_ctx();
     let result = FetchTool.execute(serde_json::json!({}), &ctx).await;
     assert!(result.is_err());
 }
 
 #[tokio::test]
 async fn test_fetch_invalid_url_returns_error() {
-    let ctx = loopal_tool_api::ToolContext {
-        cwd: std::env::temp_dir(), session_id: "t".into(), shared: None,
-    };
+    let ctx = make_ctx();
     // URL without http(s) scheme is rejected at validation, no network I/O
     let result = FetchTool.execute(serde_json::json!({"url": "not-a-url"}), &ctx).await;
     assert!(result.is_err());

@@ -55,23 +55,6 @@ impl Kernel {
         self.provider_registry.register(provider);
     }
 
-    /// Initialize sandbox policy and wrap all registered tools with the decorator.
-    pub fn init_sandbox(&mut self, cwd: &std::path::Path) {
-        use loopal_config::SandboxPolicy;
-        if self.settings.sandbox.policy != SandboxPolicy::Disabled {
-            let resolved = loopal_sandbox::resolve_policy(&self.settings.sandbox, cwd);
-            info!(
-                policy = ?resolved.policy,
-                writable_paths = resolved.writable_paths.len(),
-                "sandbox initialized"
-            );
-            let policy = resolved;
-            self.tool_registry.wrap_all(move |inner| {
-                Box::new(loopal_sandbox::SandboxedTool::new(inner, policy.clone()))
-            });
-        }
-    }
-
     /// Start all configured MCP servers and register their tools.
     pub async fn start_mcp(&mut self) -> Result<()> {
         if !self.settings.mcp_servers.is_empty() {
@@ -99,6 +82,27 @@ impl Kernel {
     }
 
     // --- Query methods (post-Arc, immutable) ---
+
+    /// Create a `LocalBackend` for the given working directory.
+    ///
+    /// Resolves the sandbox policy (if enabled) and bundles it with default
+    /// resource limits. The returned `Arc` is injected into `ToolContext.backend`.
+    pub fn create_backend(
+        &self,
+        cwd: &std::path::Path,
+    ) -> Arc<dyn loopal_tool_api::Backend> {
+        use loopal_config::SandboxPolicy;
+        let policy = if self.settings.sandbox.policy != SandboxPolicy::Disabled {
+            Some(loopal_sandbox::resolve_policy(&self.settings.sandbox, cwd))
+        } else {
+            None
+        };
+        loopal_backend::LocalBackend::new(
+            cwd.to_path_buf(),
+            policy,
+            loopal_backend::ResourceLimits::default(),
+        )
+    }
 
     /// Access settings.
     pub fn settings(&self) -> &Settings {

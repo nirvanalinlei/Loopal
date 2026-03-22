@@ -3,7 +3,16 @@ use loopal_tool_apply_patch::ApplyPatchTool;
 use serde_json::json;
 
 fn make_ctx(cwd: &std::path::Path) -> ToolContext {
-    ToolContext { cwd: cwd.to_path_buf(), session_id: "test".into(), shared: None }
+    let backend = loopal_backend::LocalBackend::new(
+        cwd.to_path_buf(),
+        None,
+        loopal_backend::ResourceLimits::default(),
+    );
+    ToolContext {
+        session_id: "test".into(),
+        shared: None,
+        backend,
+    }
 }
 
 #[test]

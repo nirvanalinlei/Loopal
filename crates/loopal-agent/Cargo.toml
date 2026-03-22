@@ -26,5 +26,6 @@ uuid = { workspace = true }
 chrono = { workspace = true }
 
 [dev-dependencies]
+loopal-backend = { workspace = true }
 tempfile = "3"
 tokio = { workspace = true }

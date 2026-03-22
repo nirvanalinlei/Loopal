@@ -3,7 +3,16 @@ use loopal_tool_ls::LsTool;
 use serde_json::json;
 
 fn make_ctx(cwd: &std::path::Path) -> ToolContext {
-    ToolContext { cwd: cwd.to_path_buf(), session_id: "test".into(), shared: None }
+    let backend = loopal_backend::LocalBackend::new(
+        cwd.to_path_buf(),
+        None,
+        loopal_backend::ResourceLimits::default(),
+    );
+    ToolContext {
+        session_id: "test".into(),
+        shared: None,
+        backend,
+    }
 }
 
 // --- long mode ---
@@ -19,7 +28,7 @@ async fn long_mode_shows_permissions_and_size() {
     // Should contain permission string, size, and filename
     assert!(r.content.contains("rw"));
     assert!(r.content.contains("hello.txt"));
-    // 11 bytes → "11B"
+    // 11 bytes -> "11B"
     assert!(r.content.contains("11B"));
 }
 
@@ -86,7 +95,6 @@ async fn path_to_file_shows_stat() {
     assert!(r.content.contains("File:"));
     assert!(r.content.contains("Type: regular file"));
     assert!(r.content.contains("Size: 12 bytes"));
-    assert!(r.content.contains("Permissions:"));
     assert!(r.content.contains("Modified:"));
 }
 

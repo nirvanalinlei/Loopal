@@ -61,7 +61,9 @@ async fn test_execute_tools_completion_mixed_with_normal_tool() {
         "la_comp_mixed_{}.txt", std::process::id()
     ));
     std::fs::write(&tmp, "data").unwrap();
-    runner.tool_ctx.cwd = std::env::temp_dir();
+    runner.tool_ctx.backend = loopal_backend::LocalBackend::new(
+        std::env::temp_dir(), None, loopal_backend::ResourceLimits::default(),
+    );
 
     tokio::spawn(async move { while event_rx.recv().await.is_some() {} });
 
