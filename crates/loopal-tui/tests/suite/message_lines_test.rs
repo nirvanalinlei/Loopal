@@ -42,7 +42,7 @@ fn test_long_line_wraps_into_multiple_visual_lines() {
 fn test_short_line_no_extra_wrap() {
     let m = msg("user", "hello world");
     let lines = message_to_lines(&m, 80);
-    // "> hello world" (dim) + empty separator = 2
+    // "▎ hello world" + empty separator = 2
     assert_eq!(lines.len(), 2);
 }
 
@@ -67,7 +67,7 @@ fn test_cjk_double_width_wraps_correctly() {
     let cjk = "你好世界测试中文双宽";
     let m = msg("user", cjk);
     let lines_10 = message_to_lines(&m, 10);
-    // "> " prefix + CJK in 10-col width → at least 2 content lines
+    // "▎ " prefix + CJK in 10-col width → at least 2 content lines
     let content_lines = lines_10.len() - 1; // subtract trailing empty
     assert!(
         content_lines >= 2,
@@ -109,7 +109,7 @@ fn test_multiline_content_preserves_line_breaks() {
     let m = msg("user", "line1\nline2\nline3");
     let lines = message_to_lines(&m, 80);
     let texts = lines_text(&lines);
-    // "> line1" + "  line2" + "  line3" + separator = 4
+    // "▎ line1" + "▎ line2" + "▎ line3" + separator = 4
     assert_eq!(lines.len(), 4);
     assert!(texts[0].contains("line1"));
     assert!(texts[1].contains("line2"));
@@ -121,7 +121,7 @@ fn test_user_message_has_prompt_prefix() {
     let m = msg("user", "hello");
     let lines = message_to_lines(&m, 80);
     let texts = lines_text(&lines);
-    assert!(texts[0].starts_with("> "), "user msg should start with '> '");
+    assert!(texts[0].starts_with("▎ "), "user msg should start with '▎ '");
 }
 
 #[test]

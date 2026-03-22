@@ -2,7 +2,7 @@
 ///
 /// Drives the conversion from markdown events to styled `Line`s.
 /// Block-level and inline-level handling are split into sibling modules.
-use pulldown_cmark::{Event, Options, Parser};
+use pulldown_cmark::{Alignment, Event, Options, Parser};
 use ratatui::prelude::*;
 
 use super::styles::MarkdownStyles;
@@ -36,6 +36,15 @@ pub(super) struct MdWriter {
     pub pending_spans: Vec<Span<'static>>,
     pub width: u16,
     pub heading_level: Option<u8>,
+    /// Current link destination URL (set during link span).
+    pub link_url: Option<String>,
+    // Table state
+    pub in_table: bool,
+    pub table_alignments: Vec<Alignment>,
+    pub table_rows: Vec<Vec<String>>,
+    pub current_row: Vec<String>,
+    pub current_cell: String,
+    pub in_table_header: bool,
 }
 
 impl MdWriter {
@@ -52,13 +61,22 @@ impl MdWriter {
             pending_spans: Vec::new(),
             width,
             heading_level: None,
+            link_url: None,
+            in_table: false,
+            table_alignments: Vec::new(),
+            table_rows: Vec::new(),
+            current_row: Vec::new(),
+            current_cell: String::new(),
+            in_table_header: false,
         }
     }
 
     /// Run the full markdown-to-lines conversion.
     pub fn render(mut self, input: &str) -> Vec<Line<'static>> {
         let opts = Options::ENABLE_STRIKETHROUGH
-            | Options::ENABLE_TABLES;
+            | Options::ENABLE_TABLES
+            | Options::ENABLE_TASKLISTS
+            | Options::ENABLE_FOOTNOTES;
         let parser = Parser::new_ext(input, opts);
         for event in parser {
             self.handle_event(event);
@@ -78,6 +96,8 @@ impl MdWriter {
             Event::Rule => self.on_rule(),
             Event::Html(html) => self.on_text(&html),
             Event::InlineHtml(html) => self.on_text(&html),
+            Event::TaskListMarker(checked) => self.on_task_list_marker(checked),
+            Event::FootnoteReference(label) => self.on_footnote_ref(&label),
             _ => {}
         }
     }

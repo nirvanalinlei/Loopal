@@ -1,9 +1,11 @@
 /// Message lines conversion: DisplayMessage → Vec<Line<'static>>.
 ///
-/// Instruction model: user messages are dim commands (`> content`),
-/// assistant output flows directly without labels, tool calls are
-/// single-line work traces, thinking is a collapsed indicator.
+/// Instruction model: user messages show in a tinted background block
+/// with a left accent bar for dark-mode readability. Assistant output
+/// flows directly without labels, tool calls are single-line work traces,
+/// thinking is a collapsed indicator.
 use ratatui::prelude::*;
+use unicode_width::UnicodeWidthStr;
 
 use crate::markdown;
 use loopal_session::types::DisplayMessage;
@@ -43,25 +45,47 @@ pub fn message_to_lines(msg: &DisplayMessage, width: u16) -> Vec<Line<'static>> 
     lines
 }
 
-/// User message: `> content` (dim, acts as instruction record).
+/// User message: tinted background block with left accent bar.
+///
+/// ```text
+/// ▎ user message text padded to full width         ██████
+/// ▎ continuation line                              ██████
+/// ```
 fn render_user(lines: &mut Vec<Line<'static>>, msg: &DisplayMessage, width: u16) {
-    let dim = Style::default()
-        .fg(Color::DarkGray)
-        .add_modifier(Modifier::DIM);
+    let w = (width as usize).max(1);
+    let accent = Style::default()
+        .fg(Color::Rgb(100, 130, 200))
+        .bg(Color::Rgb(30, 35, 48));
+    let text_style = Style::default()
+        .fg(Color::Rgb(185, 190, 205))
+        .bg(Color::Rgb(30, 35, 48));
+
     if msg.content.is_empty() {
-        lines.push(Line::from(Span::styled("> ", dim)));
+        lines.push(user_line("", w, accent, text_style));
         return;
     }
-    for (i, line) in msg.content.lines().enumerate() {
-        let prefix = if i == 0 { "> " } else { "  " };
-        let text = format!("{}{}", prefix, line);
-        let w = (width as usize).max(1);
-        lines.extend(
-            textwrap::wrap(&text, w)
-                .into_iter()
-                .map(|cow| Line::from(Span::styled(cow.into_owned(), dim))),
-        );
+    // Wrap at (width - 3) to reserve space for "▎ " prefix (3 cols)
+    let inner_w = w.saturating_sub(3).max(1);
+    for line in msg.content.lines() {
+        for cow in textwrap::wrap(line, inner_w) {
+            lines.push(user_line(&cow, w, accent, text_style));
+        }
     }
+}
+
+/// Build a single user-message line: `▎ text<padding>`.
+///
+/// Pads with spaces to fill `total_width` so the background covers the row.
+fn user_line(text: &str, total_width: usize, accent: Style, text_style: Style) -> Line<'static> {
+    let prefix = "▎ ";
+    let prefix_w = 3; // ▎(2) + space(1)
+    let text_w = UnicodeWidthStr::width(text);
+    let pad = total_width.saturating_sub(prefix_w + text_w);
+    Line::from(vec![
+        Span::styled(prefix.to_string(), accent),
+        Span::styled(text.to_string(), text_style),
+        Span::styled(" ".repeat(pad), text_style),
+    ])
 }
 
 /// Assistant message: direct output, no label. Markdown rendered.

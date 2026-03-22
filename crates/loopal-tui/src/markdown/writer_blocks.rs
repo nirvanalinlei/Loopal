@@ -1,5 +1,5 @@
 /// Block-level markdown event handling: paragraphs, headings, code blocks,
-/// lists, blockquotes, and horizontal rules.
+/// lists, blockquotes, horizontal rules, images, and tables.
 use pulldown_cmark::{CodeBlockKind, Tag, TagEnd};
 use ratatui::prelude::*;
 
@@ -19,11 +19,16 @@ impl MdWriter {
             Tag::BlockQuote(_) => self.start_blockquote(),
             Tag::List(start) => self.start_list(start),
             Tag::Item => self.start_item(),
+            Tag::Table(alignments) => self.start_table(alignments),
+            Tag::TableHead => self.start_table_head(),
+            Tag::TableRow => self.start_table_row(),
+            Tag::TableCell => self.start_table_cell(),
             // Inline tags — delegated to writer_inline
             Tag::Emphasis => self.start_emphasis(),
             Tag::Strong => self.start_strong(),
             Tag::Strikethrough => self.start_strikethrough(),
             Tag::Link { dest_url, .. } => self.start_link(dest_url.to_string()),
+            Tag::Image { .. } => self.start_image(),
             _ => {}
         }
     }
@@ -37,11 +42,16 @@ impl MdWriter {
             TagEnd::BlockQuote(_) => self.end_blockquote(),
             TagEnd::List(_) => self.end_list(),
             TagEnd::Item => self.end_item(),
+            TagEnd::Table => self.end_table(),
+            TagEnd::TableHead => self.end_table_head(),
+            TagEnd::TableRow => self.end_table_row(),
+            TagEnd::TableCell => self.end_table_cell(),
             // Inline tags — delegated to writer_inline
             TagEnd::Emphasis => self.end_emphasis(),
             TagEnd::Strong => self.end_strong(),
             TagEnd::Strikethrough => self.end_strikethrough(),
             TagEnd::Link => self.end_link(),
+            TagEnd::Image => self.end_image(),
             _ => {}
         }
     }
@@ -77,12 +87,9 @@ impl MdWriter {
     }
 
     fn indent_width_calc(&self) -> u16 {
-        self.indent_stack
-            .iter()
-            .map(|ctx| {
-                ctx.prefix.iter().map(|s| s.content.len()).sum::<usize>() as u16
-            })
-            .sum()
+        self.indent_stack.iter().map(|ctx| {
+            ctx.prefix.iter().map(|s| s.content.len()).sum::<usize>() as u16
+        }).sum()
     }
 
     // ---- Code blocks ----
@@ -186,12 +193,6 @@ impl MdWriter {
 }
 
 fn heading_num(level: pulldown_cmark::HeadingLevel) -> u8 {
-    match level {
-        pulldown_cmark::HeadingLevel::H1 => 1,
-        pulldown_cmark::HeadingLevel::H2 => 2,
-        pulldown_cmark::HeadingLevel::H3 => 3,
-        pulldown_cmark::HeadingLevel::H4 => 4,
-        pulldown_cmark::HeadingLevel::H5 => 5,
-        pulldown_cmark::HeadingLevel::H6 => 6,
-    }
+    use pulldown_cmark::HeadingLevel::*;
+    match level { H1 => 1, H2 => 2, H3 => 3, H4 => 4, H5 => 5, H6 => 6 }
 }

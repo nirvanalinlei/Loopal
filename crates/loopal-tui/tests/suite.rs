@@ -23,6 +23,8 @@ mod markdown_code_test;
 mod markdown_edge_test;
 #[path = "suite/markdown_test.rs"]
 mod markdown_test;
+#[path = "suite/markdown_table_test.rs"]
+mod markdown_table_test;
 #[path = "suite/message_lines_test.rs"]
 mod message_lines_test;
 #[path = "suite/message_lines_edge_test.rs"]
