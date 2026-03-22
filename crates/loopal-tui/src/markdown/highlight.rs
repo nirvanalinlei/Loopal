@@ -35,7 +35,9 @@ fn theme() -> &'static Theme {
         ts.themes
             .get("base16-ocean.dark")
             .cloned()
-            .unwrap_or_else(|| ts.themes.values().next().unwrap().clone())
+            .unwrap_or_else(|| {
+                ts.themes.values().next().cloned().unwrap_or_default()
+            })
     })
 }
 

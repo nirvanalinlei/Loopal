@@ -1,12 +1,10 @@
+pub mod agent_panel;
 pub mod command_menu;
-pub mod inbox_view;
 pub mod input_view;
-pub mod message_log_view;
 pub mod picker;
 pub mod progress;
 pub mod question_dialog;
 pub mod rewind_picker;
-pub mod status_bar;
-pub mod subagent_panel;
-pub mod task_summary;
+pub mod separator;
 pub mod tool_confirm;
+pub mod unified_status;

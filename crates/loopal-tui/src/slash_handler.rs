@@ -165,9 +165,7 @@ fn show_status(app: &mut App) {
         state.model,
         context_info,
         state.turn_count,
-        std::env::current_dir()
-            .map(|p| p.display().to_string())
-            .unwrap_or_else(|_| "unknown".to_string()),
+        app.cwd.display(),
     );
     drop(state);
     app.session.push_system_message(status);

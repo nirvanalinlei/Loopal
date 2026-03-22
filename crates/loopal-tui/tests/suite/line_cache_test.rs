@@ -61,17 +61,23 @@ fn test_tool_call_mutation_detected() {
             result: None,
         }],
     }];
-    cache.update(&msgs, W);
+    let fp1 = cache.update(&msgs, W);
+
+    // Mutate: status changes → icon changes from ⋯ to ✓
     msgs[0].tool_calls[0].status = "success".to_string();
-    msgs[0].tool_calls[0].summary = "bash(ls)".to_string();
     msgs[0].tool_calls[0].result = Some("done".to_string());
-    cache.update(&msgs, W);
+    let fp2 = cache.update(&msgs, W);
+
+    // Cache should detect the mutation via fingerprint change
     let text: String = cache
         .tail(100)
         .iter()
         .flat_map(|l| l.spans.iter().map(|s| s.content.to_string()))
         .collect();
-    assert!(text.contains("done"));
+    // Single-line summary should contain the status icon change
+    assert!(text.contains("✓"), "should show success icon after mutation");
+    // Fingerprint-triggered rebuild means line counts may differ
+    assert!(fp1 > 0 && fp2 > 0, "both updates should produce lines");
 }
 
 #[test]
@@ -117,6 +123,13 @@ fn test_tool_result_arrival_invalidates_cache() {
     msgs[0].tool_calls[0].result = Some("file content here".to_string());
     let n2 = cache.update(&msgs, W);
 
-    // Cache should detect the mutation (more lines due to result rendering)
-    assert!(n2 > n1, "result arrival should produce more lines");
+    // Single-line summary: line count stays the same, but cache was rebuilt
+    // (fingerprint changed). Verify the summary text is updated.
+    let text: String = cache
+        .tail(100)
+        .iter()
+        .flat_map(|l| l.spans.iter().map(|s| s.content.to_string()))
+        .collect();
+    assert!(text.contains("✓"), "result arrival should update status icon");
+    assert!(n1 > 0 && n2 > 0, "both states should produce lines");
 }

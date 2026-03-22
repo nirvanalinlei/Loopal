@@ -1,5 +1,7 @@
 //! Agent event handling — updates AgentViewState tracking.
 
+use std::time::Instant;
+
 use loopal_protocol::AgentStatus;
 use loopal_protocol::AgentEventPayload;
 
@@ -12,6 +14,11 @@ pub(crate) fn apply_agent_event(
     payload: AgentEventPayload,
 ) {
     let agent = state.agents.entry(name.to_string()).or_default();
+
+    // Record first-seen timestamp for elapsed time display
+    if agent.started_at.is_none() {
+        agent.started_at = Some(Instant::now());
+    }
 
     match &payload {
         AgentEventPayload::Started => {

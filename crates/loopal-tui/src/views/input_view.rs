@@ -1,25 +1,42 @@
-/// Input view: extracted input rendering with CJK cursor fix.
+/// Input view: single-line `> ` prompt with CJK cursor fix.
+///
+/// No border, no title — just a command input channel.
+/// Shows inbox count when messages are queued: `> (2 queued) `.
 use ratatui::prelude::*;
-use ratatui::widgets::{Block, Borders, Paragraph};
+use ratatui::widgets::Paragraph;
 use unicode_width::UnicodeWidthChar;
 
-/// Render the input area with proper cursor positioning.
-pub fn render_input(f: &mut Frame, input: &str, cursor: usize, area: Rect) {
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .title(" Input ");
+/// Render the input area as a single-line `> ` prompt.
+pub fn render_input(
+    f: &mut Frame,
+    input: &str,
+    cursor: usize,
+    inbox_count: usize,
+    area: Rect,
+) {
+    if area.height == 0 {
+        return;
+    }
 
-    let inner = block.inner(area);
-    f.render_widget(block, area);
+    let prefix = if inbox_count > 0 {
+        format!("> ({} queued) ", inbox_count)
+    } else {
+        "> ".to_string()
+    };
+    let prefix_width: usize = prefix.chars().map(|c| c.width().unwrap_or(0)).sum();
 
-    let input_text = Paragraph::new(input);
-    f.render_widget(input_text, inner);
+    let line = Line::from(vec![
+        Span::styled(prefix, Style::default().fg(Color::DarkGray)),
+        Span::raw(input.to_string()),
+    ]);
 
-    // Use unicode display width for CJK cursor positioning
-    let display_width = display_width_up_to(input, cursor);
+    f.render_widget(Paragraph::new(line), area);
+
+    // Cursor position: prefix display width + input display width up to cursor
+    let input_width = display_width_up_to(input, cursor);
     f.set_cursor_position((
-        inner.x + display_width as u16,
-        inner.y,
+        area.x + (prefix_width + input_width) as u16,
+        area.y,
     ));
 }
 

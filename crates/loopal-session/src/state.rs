@@ -16,6 +16,15 @@ pub struct AgentViewState {
     pub observable: ObservableAgentState,
     /// Per-agent message log (sent/received messages).
     pub message_log: Vec<MessageLogEntry>,
+    /// Timestamp when the agent was first observed (for elapsed display).
+    pub started_at: Option<Instant>,
+}
+
+impl AgentViewState {
+    /// Elapsed time since the agent was first observed.
+    pub fn elapsed(&self) -> Duration {
+        self.started_at.map_or(Duration::ZERO, |t| t.elapsed())
+    }
 }
 
 /// All observable state of a session, protected by a Mutex in SessionController.

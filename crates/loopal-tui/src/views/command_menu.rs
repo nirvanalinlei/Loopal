@@ -4,6 +4,9 @@ use ratatui::widgets::{Block, Borders, Clear};
 use crate::app::AutocompleteState;
 use crate::command::CommandEntry;
 
+/// Maximum visible items in the autocomplete dropdown.
+const MAX_MENU_ITEMS: usize = 8;
+
 /// Render the floating command autocomplete menu above the input area.
 pub fn render_command_menu(
     f: &mut Frame,
@@ -15,7 +18,7 @@ pub fn render_command_menu(
         return;
     }
 
-    let item_count = ac.matches.len().min(8) as u16;
+    let item_count = ac.matches.len().min(MAX_MENU_ITEMS) as u16;
     // +2 for border top/bottom
     let menu_height = item_count + 2;
 

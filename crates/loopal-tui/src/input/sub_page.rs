@@ -29,6 +29,7 @@ fn handle_model_picker_key(app: &mut App, key: &KeyEvent) -> InputAction {
     match key.code {
         KeyCode::Esc => {
             app.sub_page = None;
+            app.last_esc_time = None; // prevent stale double-ESC trigger
             InputAction::None
         }
         KeyCode::Up => {
@@ -51,6 +52,7 @@ fn handle_model_picker_key(app: &mut App, key: &KeyEvent) -> InputAction {
                     .get(picker.thinking_selected)
                     .map(|o| o.value.clone());
                 app.sub_page = None;
+                app.last_esc_time = None;
                 match thinking_json {
                     Some(json) => InputAction::SlashCommand(
                         SlashCommandAction::ModelAndThinkingSelected {
@@ -117,6 +119,7 @@ fn handle_rewind_picker_key(app: &mut App, key: &KeyEvent) -> InputAction {
     match key.code {
         KeyCode::Esc => {
             app.sub_page = None;
+            app.last_esc_time = None;
             InputAction::None
         }
         KeyCode::Up => {
@@ -133,6 +136,7 @@ fn handle_rewind_picker_key(app: &mut App, key: &KeyEvent) -> InputAction {
             if let Some(item) = state.turns.get(state.selected) {
                 let turn_index = item.turn_index;
                 app.sub_page = None;
+                app.last_esc_time = None;
                 InputAction::SlashCommand(SlashCommandAction::RewindConfirmed(turn_index))
             } else {
                 app.sub_page = None;

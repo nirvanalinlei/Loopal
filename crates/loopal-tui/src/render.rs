@@ -3,115 +3,114 @@ use ratatui::prelude::*;
 use crate::app::{App, SubPage};
 use crate::views;
 
-/// Compose all views into the seven-area layout.
+// ---------------------------------------------------------------------------
+// Layout
+// ---------------------------------------------------------------------------
+
+/// Computed frame layout for one render pass.
+///
+/// Pure function of (terminal size, agent count) → rectangles.
+/// Separates "where things go" from "what renders there."
+struct FrameLayout {
+    content: Rect,   // f₁: workflow output (elastic)
+    agents: Rect,    // f₂: agent status panel (dynamic 0-N)
+    separator: Rect, // f₃: dim dashed line (1)
+    input: Rect,     // f₄: command prompt (1)
+    status: Rect,    // f₅: unified status bar (1)
+    /// Merged area for sub-page pickers (replaces f₁..f₄).
+    picker: Rect,
+}
+
+impl FrameLayout {
+    fn compute(size: Rect, agent_panel_h: u16) -> Self {
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Min(3),
+                Constraint::Length(agent_panel_h),
+                Constraint::Length(1),
+                Constraint::Length(1),
+                Constraint::Length(1),
+            ])
+            .split(size);
+
+        let [content, agents, separator, input, status] =
+            [chunks[0], chunks[1], chunks[2], chunks[3], chunks[4]];
+
+        let picker = Rect::new(
+            content.x,
+            content.y,
+            content.width,
+            content.height + agents.height + separator.height + input.height,
+        );
+
+        Self { content, agents, separator, input, status, picker }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Composition: ui = Σ f_i(state_i)
+// ---------------------------------------------------------------------------
+
+/// Compose all views into the frame.
 ///
 /// ```text
-/// ┌───────────────────────────────────────────────┐
-/// │ Progress Area (elastic main region)            │
-/// ├───────────────────────────────────────────────┤
-/// │ [~] agent (tools, turns, tokens)  (0-1 line)  │
-/// ├───────────────────────────────────────────────┤
-/// │ [src→tgt] preview...      (message feed, 0-3) │
-/// ├───────────────────────────────────────────────┤
-/// │ ● Status  3m24s  ↑1.2k ↓0.8k  (Task Summary) │
-/// ├───────────────────────────────────────────────┤
-/// │  pending message...       (Inbox, dynamic 0-3) │
-/// ├───────────────────────────────────────────────┤
-/// │ > Input                              (3 lines) │
-/// ├───────────────────────────────────────────────┤
-/// │ ACT  model  ctx:45k/200k  turns:3   (1 line)  │
-/// └───────────────────────────────────────────────┘
+/// ui = Σ f_i(state_i)
+///
+/// f_i   view        state slice                               height
+/// ────  ──────────  ──────────────────────────────────────────  ─────────
+/// f₁    content     messages, streaming, thinking, scroll      Min(3)
+/// f₂    agents      agents, focused_agent                      dynamic
+/// f₃    separator   (none)                                     1
+/// f₄    input       input_text, cursor, inbox_count            1
+/// f₅    status      mode, model, tokens, elapsed, thinking     1
 /// ```
 pub fn draw(f: &mut Frame, app: &mut App) {
     let size = f.area();
     let state = app.session.lock();
+    let layout = FrameLayout::compute(size, views::agent_panel::panel_height(&state.agents));
 
-    let inbox_h = views::inbox_view::inbox_height(&state.inbox);
-    let panel_h = views::subagent_panel::panel_height(&state.agents);
-    let feed_h = views::message_log_view::feed_height(&state.message_feed);
-
-    let constraints = vec![
-        Constraint::Min(5),           // progress area
-        Constraint::Length(panel_h),  // agent panel (0 or 1)
-        Constraint::Length(feed_h),   // message feed (0-3)
-        Constraint::Length(1),        // task summary
-        Constraint::Length(inbox_h),  // inbox (dynamic 0-3)
-        Constraint::Length(3),        // input
-        Constraint::Length(1),        // status bar
-    ];
-
-    let chunks = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints(constraints)
-        .split(size);
-
-    let [progress_area, panel_area, feed_area, summary_area, inbox_area, input_area, status_area] =
-        [chunks[0], chunks[1], chunks[2], chunks[3], chunks[4], chunks[5], chunks[6]];
-
-    // Sub-page replaces progress + panel + feed + summary + inbox + input
+    // Sub-page mode: picker replaces f₁..f₄, only f₅ remains
     if let Some(ref sub_page) = app.sub_page {
-        let picker_area = Rect::new(
-            progress_area.x,
-            progress_area.y,
-            progress_area.width,
-            progress_area.height
-                + panel_area.height
-                + feed_area.height
-                + summary_area.height
-                + inbox_area.height
-                + input_area.height,
-        );
-
         match sub_page {
-            SubPage::ModelPicker(picker) => {
-                views::picker::render_picker(f, picker, picker_area);
-            }
-            SubPage::RewindPicker(state) => {
-                views::rewind_picker::render_rewind_picker(f, state, picker_area);
+            SubPage::ModelPicker(p) => views::picker::render_picker(f, p, layout.picker),
+            SubPage::RewindPicker(r) => {
+                views::rewind_picker::render_rewind_picker(f, r, layout.picker);
             }
         }
-
-        views::status_bar::render_status_bar(f, &state, status_area);
+        views::unified_status::render_unified_status(f, &state, layout.status);
         return;
     }
 
-    // Normal seven-area render
+    // --- Σ f_i(state_i) ---
     views::progress::render_progress(
-        f,
-        &state,
-        app.scroll_offset,
-        &mut app.line_cache,
-        progress_area,
+        f, &state, app.scroll_offset, &mut app.line_cache, layout.content,
     );
-    views::subagent_panel::render_subagent_panel(
-        f,
-        &state.agents,
-        state.focused_agent.as_deref(),
-        panel_area,
+    views::agent_panel::render_agent_panel(
+        f, &state.agents, state.focused_agent.as_deref(), layout.agents,
     );
-    views::message_log_view::render_message_feed(f, &state.message_feed, feed_area);
-    views::task_summary::render_task_summary(f, &state, summary_area);
-    views::inbox_view::render_inbox(f, &state.inbox, inbox_area);
-    views::status_bar::render_status_bar(f, &state, status_area);
+    views::separator::render_separator(f, layout.separator);
+    views::unified_status::render_unified_status(f, &state, layout.status);
 
-    // Tool confirm popup overlay — clone permission data, then drop lock
+    // Extract overlay data, release domain state lock
     let pending_perm = state.pending_permission.clone();
     let pending_question = state.pending_question.clone();
+    let inbox_count = state.inbox.len();
     drop(state);
 
-    views::input_view::render_input(f, &app.input, app.input_cursor, input_area);
+    // f₄ rendered post-lock (borrows app.input, not SessionState)
+    views::input_view::render_input(
+        f, &app.input, app.input_cursor, inbox_count, layout.input,
+    );
 
+    // Overlay layer: conditional popups on top of base composition
     if let Some(ref perm) = pending_perm {
         views::tool_confirm::render_tool_confirm(f, &perm.name, &perm.input, size);
     }
-
-    // Question dialog overlay (AskUser tool)
     if let Some(ref question) = pending_question {
         views::question_dialog::render_question_dialog(f, question, size);
     }
-
-    // Autocomplete command menu overlay (above input area)
     if let Some(ref ac) = app.autocomplete {
-        views::command_menu::render_command_menu(f, ac, &app.commands, input_area);
+        views::command_menu::render_command_menu(f, ac, &app.commands, layout.input);
     }
 }

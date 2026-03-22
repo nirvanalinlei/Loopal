@@ -1,20 +1,21 @@
-/// Progress area: main chat/agent output region.
+/// Content area: main agent output region (borderless).
 mod line_cache;
 mod message_lines;
+mod tool_summary;
 
 use ratatui::prelude::*;
-use ratatui::widgets::{Block, Borders, Paragraph};
+use ratatui::widgets::Paragraph;
 
 use loopal_session::state::SessionState;
 
 pub use line_cache::LineCache;
 pub use message_lines::{message_to_lines, streaming_to_lines};
+pub use tool_summary::summarize_result;
 
-/// Render the progress (chat) area.
+/// Render the content area — no border, no title, content fills the area.
 ///
 /// Lines are pre-wrapped to terminal width via textwrap, so each Line
-/// equals one visual row. No Paragraph::wrap() needed; `lines.len()`
-/// is the exact visual line count, making scroll arithmetic correct.
+/// equals one visual row. `lines.len()` is the exact visual line count.
 pub fn render_progress(
     f: &mut Frame,
     state: &SessionState,
@@ -22,37 +23,30 @@ pub fn render_progress(
     line_cache: &mut LineCache,
     area: Rect,
 ) {
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .title(" Chat ");
-
-    let inner = block.inner(area);
-    f.render_widget(block, area);
-
-    let visible_h = inner.height as usize;
+    let visible_h = area.height as usize;
     if visible_h == 0 {
         return;
     }
 
     // Update cache with width for pre-wrapping (resize triggers full rebuild)
-    line_cache.update(&state.messages, inner.width);
+    line_cache.update(&state.messages, area.width);
 
     // Streaming lines (pre-wrapped at current width)
-    let streaming = streaming_to_lines(&state.streaming_text, inner.width);
+    let streaming = streaming_to_lines(&state.streaming_text, area.width);
 
     // Thinking indicator (shown during active thinking)
     let thinking_lines = if state.thinking_active {
         let token_est = state.streaming_thinking.len() as u32 / 4;
-        let indicator = format!("Thinking... ({} tokens)", token_est);
+        let label = format!("Thinking... ({} tokens)", token_est);
         vec![Line::from(Span::styled(
-            indicator,
+            label,
             Style::default().fg(Color::Magenta).add_modifier(Modifier::DIM),
         ))]
     } else {
         vec![]
     };
 
-    // Window: lines are already visual rows, no 4x buffer needed
+    // Window: lines are already visual rows
     let window_size = visible_h + scroll_offset as usize;
     let cached_tail = line_cache.tail(window_size);
 
@@ -71,5 +65,5 @@ pub fn render_progress(
         .saturating_sub(scroll_offset);
 
     let paragraph = Paragraph::new(lines).scroll((scroll_row, 0));
-    f.render_widget(paragraph, inner);
+    f.render_widget(paragraph, area);
 }

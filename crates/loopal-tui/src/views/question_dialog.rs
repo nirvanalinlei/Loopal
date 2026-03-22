@@ -17,7 +17,9 @@ pub fn render_question_dialog(
 
     f.render_widget(Clear, popup_area);
 
-    let question = &q.questions[q.current_question];
+    // Defensive: bail if indices are out of bounds
+    let Some(question) = q.questions.get(q.current_question) else { return; };
+    let Some(selected) = q.selected.get(q.current_question) else { return; };
     let block = Block::default()
         .borders(Borders::ALL)
         .title(format!(
@@ -41,11 +43,10 @@ pub fn render_question_dialog(
     lines.push(Line::from(""));
 
     // Options
-    let selected = &q.selected[q.current_question];
     for (i, opt) in question.options.iter().enumerate() {
         if lines.len() >= max_lines.saturating_sub(2) { break; }
         let is_cursor = i == q.cursor;
-        let is_selected = selected[i];
+        let is_selected = selected.get(i).copied().unwrap_or(false);
 
         let checkbox = if question.allow_multiple {
             if is_selected { "[x] " } else { "[ ] " }

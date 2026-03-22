@@ -13,6 +13,8 @@ mod app_tool_test;
 mod event_forwarding_test;
 #[path = "suite/event_test.rs"]
 mod event_test;
+#[path = "suite/input_test.rs"]
+mod input_test;
 #[path = "suite/line_cache_test.rs"]
 mod line_cache_test;
 #[path = "suite/markdown_code_test.rs"]
@@ -23,5 +25,9 @@ mod markdown_edge_test;
 mod markdown_test;
 #[path = "suite/message_lines_test.rs"]
 mod message_lines_test;
+#[path = "suite/message_lines_edge_test.rs"]
+mod message_lines_edge_test;
 #[path = "suite/styled_wrap_test.rs"]
 mod styled_wrap_test;
+#[path = "suite/tool_summary_test.rs"]
+mod tool_summary_test;
