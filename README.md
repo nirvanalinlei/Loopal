@@ -43,21 +43,32 @@
 
 ### Prerequisites
 
-- **Rust** (edition 2024, nightly toolchain recommended)
-- An API key for your LLM provider (e.g., `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`)
+- **Bazel** 8.x (the repository root is Bazel-first; there is no root `Cargo.toml`)
+- A Rust toolchain supported by `rules_rust` / Bazel
+- An API key for your LLM provider (for example `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, or an Anthropic-compatible proxy key such as `OPUS_API_KEY`)
 
 ### Build from source
 
 ```bash
 git clone https://github.com/AgentsMesh/Loopal.git
 cd Loopal
-cargo build --release
+bazel build //:loopal
 ```
 
-The binary will be at `target/release/loopal`. Add it to your `PATH` or install directly:
+The binary will be at `bazel-bin/loopal`.
+
+For an optimized build:
 
 ```bash
-cargo install --path .
+bazel build //:loopal -c opt
+```
+
+You can also use the repository `Makefile` shortcuts:
+
+```bash
+make build
+make release
+make install
 ```
 
 ## Quick Start
@@ -129,45 +140,102 @@ loopal
 
 ## Configuration
 
-Loopal uses a layered configuration system. Create a `.loopal/config.toml` in your project root or `~/.config/loopal/config.toml` for global settings.
+Loopal uses a layered configuration system based on `settings.json`, not `config.toml`.
 
-```toml
-# .loopal/config.toml
+Load order, from lowest to highest priority:
 
-# Default model
-model = "claude-sonnet-4-20250514"
+- plugin layers in `~/.loopal/plugins/<name>/`
+- global config in `~/.loopal/`
+- project config in `<project>/.loopal/`
+- local overrides in `<project>/.loopal/settings.local.json` and `LOOPAL.local.md`
+- environment variable overrides with the `LOOPAL_` prefix
 
-# Max turns per agent loop
-max_turns = 200
+The most common files are:
 
-# Permission mode: "supervised" or "bypass"
-permission_mode = "supervised"
-
-# Max context tokens before compaction
-max_context_tokens = 120000
-
-# Thinking/reasoning configuration
-[thinking]
-type = "auto"                  # "auto", "disabled", "effort", or "budget"
-# level = "medium"             # for "effort" type
-# tokens = 10000               # for "budget" type
-
-# MCP servers
-[mcp_servers.my-server]
-command = "npx"
-args = ["-y", "@my/mcp-server"]
-
-# Sandbox policy
-[sandbox]
-policy = "strict"              # "strict", "permissive", or "disabled"
+```text
+~/.loopal/settings.json                 Global settings
+~/.loopal/LOOPAL.md                     Global instructions
+<project>/.loopal/settings.json         Project settings
+<project>/.loopal/settings.local.json   Local overrides (gitignored)
+<project>/LOOPAL.md                     Project instructions
+<project>/.loopal/LOOPAL.local.md       Local instruction overrides
 ```
+
+Example project config:
+
+```json
+{
+  "model": "claude-sonnet-4-20250514",
+  "max_turns": 200,
+  "permission_mode": "supervised",
+  "max_context_tokens": 120000,
+  "thinking": {
+    "type": "auto"
+  },
+  "mcp_servers": {
+    "my-server": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@my/mcp-server"]
+    }
+  },
+  "sandbox": {
+    "policy": "strict"
+  }
+}
+```
+
+### Anthropic-compatible proxy example
+
+If you are using a non-official Anthropic-compatible endpoint or local proxy, configure the Anthropic provider in `settings.json` and supply credentials through environment variables:
+
+```json
+{
+  "model": "claude-opus-4-6",
+  "providers": {
+    "anthropic": {
+      "api_key_env": "OPUS_API_KEY",
+      "base_url": "http://localhost:8080"
+    }
+  }
+}
+```
+
+`base_url` accepts all of the following forms:
+
+- `http://localhost:8080`
+- `http://localhost:8080/v1`
+- `http://localhost:8080/v1/messages`
+
+Loopal normalizes these to the Anthropic messages endpoint internally.
+
+For non-official Anthropic-compatible gateways, the Anthropic provider also supports optional compatibility headers via environment variables.
 
 ### Environment variables
 
 | Variable | Description |
 |---|---|
 | `ANTHROPIC_API_KEY` | Anthropic API key |
+| `ANTHROPIC_AUTH_TOKEN` | Optional Anthropic bearer token override |
+| `ANTHROPIC_BASE_URL` | Anthropic base URL override |
+| `ANTHROPIC_API_VERSION` | Override `anthropic-version` header |
+| `ANTHROPIC_USER_AGENT` | Override `user-agent` header |
+| `ANTHROPIC_EXTRA_HEADERS` | Extra Anthropic headers, separated by newline or `;`, using `name=value` or `name:value` |
 | `OPENAI_API_KEY` | OpenAI API key |
+| `GOOGLE_API_KEY` | Google API key |
+| `OPUS_API_KEY` | Anthropic-compatible proxy key fallback |
+| `OPUS_API_URL` | Anthropic-compatible proxy base URL fallback |
+| `OPUS_BASE_URL` | Alternate Anthropic-compatible proxy base URL fallback |
+| `OPUS_API_VERSION` | Proxy-specific Anthropic version override |
+| `OPUS_API_USER_AGENT` | Proxy-specific user-agent override |
+| `OPUS_AUTH_TOKEN` | Proxy bearer token override |
+| `OPUS_EXTRA_HEADERS` | Proxy extra headers in the same format as `ANTHROPIC_EXTRA_HEADERS` |
+| `LOOPAL_MODEL` | Override the default model |
+| `LOOPAL_MAX_TURNS` | Override `max_turns` |
+| `LOOPAL_PERMISSION_MODE` | Override `permission_mode` |
+| `LOOPAL_SANDBOX` | Override `sandbox.policy` |
+
+When `base_url` is non-official Anthropic infrastructure, or when `OPUS_API_URL` is set, Loopal may automatically enable a compatibility bearer header using the configured API key. If your gateway needs a different bearer token, set `OPUS_AUTH_TOKEN` or `ANTHROPIC_AUTH_TOKEN` explicitly.
 
 ## CLI Reference
 

@@ -6,58 +6,58 @@ use loopal_provider::{
 };
 use tracing::info;
 
-/// Register all configured providers into the given registry.
 pub fn register_providers(settings: &Settings, registry: &mut ProviderRegistry) {
-    // Initialize user model metadata overlay before any provider resolution.
     loopal_provider::init_user_models(&settings.models);
-
     let providers = &settings.providers;
 
-    // Anthropic — explicit config or auto-detect from env
     let anthropic_key = providers
         .anthropic
         .as_ref()
         .and_then(|c| resolve_api_key(&c.api_key, &c.api_key_env))
-        .or_else(|| {
-            std::env::var("ANTHROPIC_API_KEY")
-                .ok()
-                .filter(|k| !k.is_empty())
-        })
-        .or_else(|| {
-            std::env::var("ANTHROPIC_AUTH_TOKEN")
-                .ok()
-                .filter(|k| !k.is_empty())
-        });
+        .or_else(|| first_env(&["ANTHROPIC_API_KEY", "OPUS_API_KEY", "ANTHROPIC_AUTH_TOKEN"]));
 
     if let Some(api_key) = anthropic_key {
-        let mut provider = AnthropicProvider::new(api_key);
-        // Base URL: config > env var
-        let base_url = providers
+        let mut provider = AnthropicProvider::new(api_key.clone());
+        let anthropic_base_url = providers
             .anthropic
             .as_ref()
             .and_then(|c| c.base_url.clone())
-            .or_else(|| {
-                std::env::var("ANTHROPIC_BASE_URL")
-                    .ok()
-                    .filter(|u| !u.is_empty())
-            });
-        if let Some(url) = base_url {
+            .or_else(|| first_env(&["ANTHROPIC_BASE_URL", "OPUS_API_URL", "OPUS_BASE_URL"]));
+        if let Some(url) = anthropic_base_url.clone() {
             provider = provider.with_base_url(url);
+        }
+        let compatibility_bearer = first_env(&["OPUS_AUTH_TOKEN", "ANTHROPIC_AUTH_TOKEN"]).or_else(|| {
+            if anthropic_base_url.as_deref().is_some_and(|url| !url.contains("api.anthropic.com"))
+                || std::env::var("OPUS_API_URL").ok().is_some()
+            {
+                Some(api_key.clone())
+            } else {
+                None
+            }
+        });
+        if let Some(token) = compatibility_bearer {
+            provider = provider.with_authorization_bearer(token);
+        }
+        if let Some(version) = first_env(&["ANTHROPIC_API_VERSION", "OPUS_API_VERSION"]) {
+            provider = provider.with_anthropic_version(version);
+        }
+        if let Some(user_agent) = first_env(&["ANTHROPIC_USER_AGENT", "OPUS_API_USER_AGENT"]) {
+            provider = provider.with_user_agent(user_agent);
+        }
+        if let Some(raw_headers) = first_env(&["ANTHROPIC_EXTRA_HEADERS", "OPUS_EXTRA_HEADERS"]) {
+            for (name, value) in parse_extra_headers(&raw_headers) {
+                provider = provider.with_extra_header(name, value);
+            }
         }
         registry.register(Arc::new(provider));
         info!("registered anthropic provider");
     }
 
-    // OpenAI — explicit config or auto-detect from env
     let openai_key = providers
         .openai
         .as_ref()
         .and_then(|c| resolve_api_key(&c.api_key, &c.api_key_env))
-        .or_else(|| {
-            std::env::var("OPENAI_API_KEY")
-                .ok()
-                .filter(|k| !k.is_empty())
-        });
+        .or_else(|| std::env::var("OPENAI_API_KEY").ok().filter(|k| !k.is_empty()));
 
     if let Some(api_key) = openai_key {
         let mut provider = OpenAiProvider::new(api_key);
@@ -70,16 +70,11 @@ pub fn register_providers(settings: &Settings, registry: &mut ProviderRegistry) 
         info!("registered openai provider");
     }
 
-    // Google — explicit config or auto-detect from env
     let google_key = providers
         .google
         .as_ref()
         .and_then(|c| resolve_api_key(&c.api_key, &c.api_key_env))
-        .or_else(|| {
-            std::env::var("GOOGLE_API_KEY")
-                .ok()
-                .filter(|k| !k.is_empty())
-        });
+        .or_else(|| std::env::var("GOOGLE_API_KEY").ok().filter(|k| !k.is_empty()));
 
     if let Some(api_key) = google_key {
         let mut provider = GoogleProvider::new(api_key);
@@ -92,7 +87,6 @@ pub fn register_providers(settings: &Settings, registry: &mut ProviderRegistry) 
         info!("registered google provider");
     }
 
-    // OpenAI-compatible providers
     for compat in &providers.openai_compat {
         if let Some(api_key) = resolve_api_key(&compat.api_key, &compat.api_key_env) {
             let provider =
@@ -108,16 +102,12 @@ pub fn register_providers(settings: &Settings, registry: &mut ProviderRegistry) 
     }
 }
 
-/// Resolve an API key from a direct value or an environment variable.
-/// Direct key takes precedence over the environment variable.
 pub fn resolve_api_key(api_key: &Option<String>, api_key_env: &Option<String>) -> Option<String> {
-    // Direct key takes precedence
     if let Some(key) = api_key
         && !key.is_empty()
     {
         return Some(key.clone());
     }
-    // Try environment variable
     if let Some(env_var) = api_key_env
         && let Ok(key) = std::env::var(env_var)
         && !key.is_empty()
@@ -125,4 +115,28 @@ pub fn resolve_api_key(api_key: &Option<String>, api_key_env: &Option<String>) -
         return Some(key);
     }
     None
+}
+
+fn first_env(names: &[&str]) -> Option<String> {
+    names.iter().find_map(|name| std::env::var(name).ok().filter(|v| !v.is_empty()))
+}
+
+fn parse_extra_headers(raw: &str) -> Vec<(String, String)> {
+    raw.split(['\n', ';'])
+        .filter_map(|entry| {
+            let trimmed = entry.trim();
+            if trimmed.is_empty() {
+                return None;
+            }
+            let (name, value) = trimmed
+                .split_once('=')
+                .or_else(|| trimmed.split_once(':'))?;
+            let name = name.trim();
+            let value = value.trim();
+            if name.is_empty() || value.is_empty() {
+                return None;
+            }
+            Some((name.to_string(), value.to_string()))
+        })
+        .collect()
 }

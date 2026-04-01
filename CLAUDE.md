@@ -17,8 +17,10 @@ bazel build //:loopal -c opt --config=macos-arm  # Cross-compile for macOS ARM64
 
 ### Dependency management
 
-External deps are managed via `crate_universe` from `Cargo.toml` / `Cargo.lock`.
-After adding/updating a dependency in `Cargo.toml`:
+External deps are managed via `crate_universe` in `MODULE.bazel` using `crate.spec()` declarations.
+The repository root is Bazel-first and does not contain a root `Cargo.toml` or `Cargo.lock`.
+
+After adding or updating a dependency in `MODULE.bazel`:
 
 ```bash
 CARGO_BAZEL_REPIN=1 bazel sync --only=crates   # Re-pin external crates
@@ -91,13 +93,28 @@ TUI Process ──stdio IPC──→ Agent Server Process ←──TCP──→ 
 
 ```
 ~/.loopal/settings.json          Global settings
-~/.loopal/LOOPAL.md           Global instructions (injected into system prompt)
+~/.loopal/LOOPAL.md              Global instructions (injected into system prompt)
 <project>/.loopal/settings.json  Project settings
 <project>/.loopal/settings.local.json  Local overrides (gitignored)
+<project>/LOOPAL.md              Project instructions
+<project>/.loopal/LOOPAL.local.md  Local instruction overrides
 ```
 
-Environment variable overrides use `LOOPAL_` prefix. Key settings: `model` (default: `claude-sonnet-4-20250514`), `max_turns` (default: 50), `permission_mode`.
+Environment variable overrides use the `LOOPAL_` prefix for core settings such as `model`, `max_turns`, `permission_mode`, and `sandbox.policy`.
 
+Anthropic-compatible proxy support is configured through the Anthropic provider entry in `settings.json` and resolved in `loopal-kernel/src/provider_registry.rs`.
+
+Supported compatibility environment variables include:
+
+- `OPUS_API_KEY`
+- `OPUS_API_URL` / `OPUS_BASE_URL`
+- `ANTHROPIC_BASE_URL`
+- `ANTHROPIC_API_VERSION` / `OPUS_API_VERSION`
+- `ANTHROPIC_USER_AGENT` / `OPUS_API_USER_AGENT`
+- `ANTHROPIC_EXTRA_HEADERS` / `OPUS_EXTRA_HEADERS`
+- `ANTHROPIC_AUTH_TOKEN` / `OPUS_AUTH_TOKEN`
+
+For Anthropic-compatible endpoints, `base_url` may be the root URL, `/v1`, or the full `/v1/messages` endpoint. The provider normalizes these forms before sending requests.
 ## Code Conventions
 
 - **200-line file limit** — all `.rs` files (including tests) must stay ≤200 lines. Split by SRP.

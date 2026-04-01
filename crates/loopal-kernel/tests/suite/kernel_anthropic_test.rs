@@ -3,7 +3,6 @@ use loopal_provider::ProviderRegistry;
 
 #[test]
 fn test_register_providers_with_config_api_key() {
-    // Test that a direct api_key in settings config registers the provider.
     let settings = Settings {
         providers: ProvidersConfig {
             anthropic: Some(ProviderConfig {
@@ -20,7 +19,6 @@ fn test_register_providers_with_config_api_key() {
 
     let mut registry = ProviderRegistry::new();
     loopal_kernel::register_providers(&settings, &mut registry);
-
     assert!(
         registry.get("anthropic").is_some(),
         "anthropic provider should be registered with direct config api_key"
@@ -29,7 +27,6 @@ fn test_register_providers_with_config_api_key() {
 
 #[test]
 fn test_register_providers_with_config_env_key() {
-    // Test that api_key_env in config works for provider registration.
     let env_var = "LOOPAL_TEST_ANTHROPIC_KEY_UNIQUE_92381";
     unsafe {
         std::env::set_var(env_var, "test-key-from-env");
@@ -51,7 +48,6 @@ fn test_register_providers_with_config_env_key() {
 
     let mut registry = ProviderRegistry::new();
     loopal_kernel::register_providers(&settings, &mut registry);
-
     assert!(
         registry.get("anthropic").is_some(),
         "anthropic provider should be registered via api_key_env"
@@ -80,7 +76,6 @@ fn test_register_providers_anthropic_with_base_url() {
 
     let mut registry = ProviderRegistry::new();
     loopal_kernel::register_providers(&settings, &mut registry);
-
     assert!(
         registry.get("anthropic").is_some(),
         "anthropic provider should be registered with base_url"
@@ -91,8 +86,6 @@ fn test_register_providers_anthropic_with_base_url() {
 fn test_register_providers_anthropic_from_auth_token_env() {
     let auth_token_env = "ANTHROPIC_AUTH_TOKEN";
     let api_key_env = "ANTHROPIC_API_KEY";
-
-    // Save original values
     let orig_api_key = std::env::var(api_key_env).ok();
     let orig_auth_token = std::env::var(auth_token_env).ok();
 
@@ -103,7 +96,7 @@ fn test_register_providers_anthropic_from_auth_token_env() {
 
     let settings = Settings {
         providers: ProvidersConfig {
-            anthropic: None, // no explicit config — should fall back to env vars
+            anthropic: None,
             openai: None,
             google: None,
             openai_compat: vec![],
@@ -113,13 +106,11 @@ fn test_register_providers_anthropic_from_auth_token_env() {
 
     let mut registry = ProviderRegistry::new();
     loopal_kernel::register_providers(&settings, &mut registry);
-
     assert!(
         registry.get("anthropic").is_some(),
         "anthropic should be registered via ANTHROPIC_AUTH_TOKEN fallback"
     );
 
-    // Restore original values
     unsafe {
         std::env::remove_var(auth_token_env);
         match orig_api_key {
@@ -135,8 +126,6 @@ fn test_register_providers_anthropic_from_auth_token_env() {
 
 #[test]
 fn test_register_providers_anthropic_config_with_empty_api_key() {
-    // Tests that an empty api_key in config doesn't register the provider,
-    // even when a valid api_key_env points to a non-existent env var.
     let result = loopal_kernel::resolve_api_key(
         &Some(String::new()),
         &Some("NONEXISTENT_ANTHRO_KEY_VAR_99999".to_string()),
@@ -151,8 +140,6 @@ fn test_register_providers_anthropic_config_with_empty_api_key() {
 fn test_register_providers_anthropic_env_base_url() {
     let api_key_env = "ANTHROPIC_API_KEY";
     let base_url_env = "ANTHROPIC_BASE_URL";
-
-    // Save original values
     let orig_api_key = std::env::var(api_key_env).ok();
     let orig_base_url = std::env::var(base_url_env).ok();
 
@@ -163,7 +150,7 @@ fn test_register_providers_anthropic_env_base_url() {
 
     let settings = Settings {
         providers: ProvidersConfig {
-            anthropic: None, // no config, rely on env
+            anthropic: None,
             openai: None,
             google: None,
             openai_compat: vec![],
@@ -173,13 +160,11 @@ fn test_register_providers_anthropic_env_base_url() {
 
     let mut registry = ProviderRegistry::new();
     loopal_kernel::register_providers(&settings, &mut registry);
-
     assert!(
         registry.get("anthropic").is_some(),
         "anthropic should be registered via ANTHROPIC_API_KEY + ANTHROPIC_BASE_URL env vars"
     );
 
-    // Restore
     unsafe {
         match orig_api_key {
             Some(v) => std::env::set_var(api_key_env, v),
@@ -188,6 +173,57 @@ fn test_register_providers_anthropic_env_base_url() {
         match orig_base_url {
             Some(v) => std::env::set_var(base_url_env, v),
             None => std::env::remove_var(base_url_env),
+        }
+    }
+}
+
+#[test]
+fn test_register_providers_anthropic_from_opus_env() {
+    let orig_opus_key = std::env::var("OPUS_API_KEY").ok();
+    let orig_opus_url = std::env::var("OPUS_API_URL").ok();
+    let orig_anthropic_key = std::env::var("ANTHROPIC_API_KEY").ok();
+    let orig_anthropic_url = std::env::var("ANTHROPIC_BASE_URL").ok();
+
+    unsafe {
+        std::env::remove_var("ANTHROPIC_API_KEY");
+        std::env::remove_var("ANTHROPIC_BASE_URL");
+        std::env::set_var("OPUS_API_KEY", "test-opus-key");
+        std::env::set_var("OPUS_API_URL", "http://localhost:8080/v1/messages");
+    }
+
+    let settings = Settings {
+        providers: ProvidersConfig {
+            anthropic: None,
+            openai: None,
+            google: None,
+            openai_compat: vec![],
+        },
+        ..Default::default()
+    };
+
+    let mut registry = ProviderRegistry::new();
+    loopal_kernel::register_providers(&settings, &mut registry);
+    assert!(
+        registry.get("anthropic").is_some(),
+        "anthropic should be registered via OPUS_API_KEY + OPUS_API_URL env vars"
+    );
+
+    unsafe {
+        match orig_opus_key {
+            Some(v) => std::env::set_var("OPUS_API_KEY", v),
+            None => std::env::remove_var("OPUS_API_KEY"),
+        }
+        match orig_opus_url {
+            Some(v) => std::env::set_var("OPUS_API_URL", v),
+            None => std::env::remove_var("OPUS_API_URL"),
+        }
+        match orig_anthropic_key {
+            Some(v) => std::env::set_var("ANTHROPIC_API_KEY", v),
+            None => std::env::remove_var("ANTHROPIC_API_KEY"),
+        }
+        match orig_anthropic_url {
+            Some(v) => std::env::set_var("ANTHROPIC_BASE_URL", v),
+            None => std::env::remove_var("ANTHROPIC_BASE_URL"),
         }
     }
 }

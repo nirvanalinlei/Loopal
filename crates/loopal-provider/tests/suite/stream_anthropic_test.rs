@@ -2,7 +2,7 @@ use super::stream_helpers::{collect_chunks, test_chat_params};
 use loopal_error::{LoopalError, ProviderError};
 use loopal_provider::AnthropicProvider;
 use loopal_provider_api::{Provider, StreamChunk};
-use wiremock::matchers::{method, path};
+use wiremock::matchers::{header, method, path};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
 fn expect_err(result: Result<loopal_provider_api::ChatStream, LoopalError>) -> LoopalError {
@@ -12,26 +12,28 @@ fn expect_err(result: Result<loopal_provider_api::ChatStream, LoopalError>) -> L
     }
 }
 
+fn success_sse_body() -> &'static str {
+    concat!(
+        "data: {\"type\":\"message_start\",\"message\":{\"usage\":{\"input_tokens\":10,\"output_tokens\":0}}}\n\n",
+        "data: {\"type\":\"content_block_start\",\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\n",
+        "data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"Hello\"}}\n\n",
+        "data: {\"type\":\"content_block_stop\"}\n\n",
+        "data: {\"type\":\"message_delta\",\"usage\":{\"input_tokens\":0,\"output_tokens\":5}}\n\n",
+        "data: {\"type\":\"message_stop\"}\n\n"
+    )
+}
+
 #[tokio::test]
 async fn test_anthropic_stream_chat_success() {
     let mock_server = MockServer::start().await;
 
-    let sse_body = "\
-data: {\"type\":\"message_start\",\"message\":{\"usage\":{\"input_tokens\":10,\"output_tokens\":0}}}\n\n\
-data: {\"type\":\"content_block_start\",\"content_block\":{\"type\":\"text\",\"text\":\"\"}}\n\n\
-data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"text_delta\",\"text\":\"Hello\"}}\n\n\
-data: {\"type\":\"content_block_stop\"}\n\n\
-data: {\"type\":\"message_delta\",\"usage\":{\"input_tokens\":0,\"output_tokens\":5}}\n\n\
-data: {\"type\":\"message_stop\"}\n\n";
-
     Mock::given(method("POST"))
         .and(path("/v1/messages"))
-        .respond_with(ResponseTemplate::new(200).set_body_raw(sse_body, "text/event-stream"))
+        .respond_with(ResponseTemplate::new(200).set_body_raw(success_sse_body(), "text/event-stream"))
         .mount(&mock_server)
         .await;
 
     let provider = AnthropicProvider::new("test-key".to_string()).with_base_url(mock_server.uri());
-
     let stream = provider.stream_chat(&test_chat_params()).await.unwrap();
     let chunks = collect_chunks(stream).await;
 
@@ -53,17 +55,81 @@ data: {\"type\":\"message_stop\"}\n\n";
 }
 
 #[tokio::test]
+async fn test_anthropic_stream_chat_accepts_full_messages_endpoint_base_url() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/v1/messages"))
+        .respond_with(ResponseTemplate::new(200).set_body_raw(success_sse_body(), "text/event-stream"))
+        .mount(&mock_server)
+        .await;
+
+    let provider = AnthropicProvider::new("test-key".to_string())
+        .with_base_url(format!("{}/v1/messages", mock_server.uri()));
+
+    let stream = provider.stream_chat(&test_chat_params()).await.unwrap();
+    let chunks = collect_chunks(stream).await;
+    assert!(chunks.into_iter().flatten().any(|chunk| matches!(chunk, StreamChunk::Done { .. })));
+}
+
+#[tokio::test]
+async fn test_anthropic_stream_chat_accepts_v1_base_url() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/v1/messages"))
+        .respond_with(ResponseTemplate::new(200).set_body_raw(success_sse_body(), "text/event-stream"))
+        .mount(&mock_server)
+        .await;
+
+    let provider = AnthropicProvider::new("test-key".to_string())
+        .with_base_url(format!("{}/v1", mock_server.uri()));
+
+    let stream = provider.stream_chat(&test_chat_params()).await.unwrap();
+    let chunks = collect_chunks(stream).await;
+    assert!(chunks.into_iter().flatten().any(|chunk| matches!(chunk, StreamChunk::Done { .. })));
+}
+
+#[tokio::test]
+async fn test_anthropic_stream_chat_sends_compat_headers() {
+    let mock_server = MockServer::start().await;
+
+    Mock::given(method("POST"))
+        .and(path("/v1/messages"))
+        .and(header("x-api-key", "test-key"))
+        .and(header("authorization", "Bearer test-bearer"))
+        .and(header("anthropic-version", "2024-02-01"))
+        .and(header("user-agent", "loopal-test-agent/1.0"))
+        .and(header("x-gateway-token", "gateway-secret"))
+        .respond_with(ResponseTemplate::new(200).set_body_raw(success_sse_body(), "text/event-stream"))
+        .mount(&mock_server)
+        .await;
+
+    let provider = AnthropicProvider::new("test-key".to_string())
+        .with_base_url(mock_server.uri())
+        .with_authorization_bearer("test-bearer".to_string())
+        .with_anthropic_version("2024-02-01".to_string())
+        .with_user_agent("loopal-test-agent/1.0".to_string())
+        .with_extra_header("x-gateway-token".to_string(), "gateway-secret".to_string());
+
+    let stream = provider.stream_chat(&test_chat_params()).await.unwrap();
+    let chunks = collect_chunks(stream).await;
+    assert!(chunks.into_iter().flatten().any(|chunk| matches!(chunk, StreamChunk::Done { .. })));
+}
+
+#[tokio::test]
 async fn test_anthropic_stream_chat_with_tool_use() {
     let mock_server = MockServer::start().await;
 
-    let sse_body = "\
-data: {\"type\":\"message_start\",\"message\":{\"usage\":{\"input_tokens\":10,\"output_tokens\":0}}}\n\n\
-data: {\"type\":\"content_block_start\",\"content_block\":{\"type\":\"tool_use\",\"id\":\"tool_1\",\"name\":\"read_file\"}}\n\n\
-data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"path\\\":\"}}\n\n\
-data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"\\\"main.rs\\\"}\"}}\n\n\
-data: {\"type\":\"content_block_stop\"}\n\n\
-data: {\"type\":\"message_delta\",\"usage\":{\"input_tokens\":0,\"output_tokens\":15}}\n\n\
-data: {\"type\":\"message_stop\"}\n\n";
+    let sse_body = concat!(
+        "data: {\"type\":\"message_start\",\"message\":{\"usage\":{\"input_tokens\":10,\"output_tokens\":0}}}\n\n",
+        "data: {\"type\":\"content_block_start\",\"content_block\":{\"type\":\"tool_use\",\"id\":\"tool_1\",\"name\":\"read_file\"}}\n\n",
+        "data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"path\\\":\"}}\n\n",
+        "data: {\"type\":\"content_block_delta\",\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"\\\"main.rs\\\"}\"}}\n\n",
+        "data: {\"type\":\"content_block_stop\"}\n\n",
+        "data: {\"type\":\"message_delta\",\"usage\":{\"input_tokens\":0,\"output_tokens\":15}}\n\n",
+        "data: {\"type\":\"message_stop\"}\n\n"
+    );
 
     Mock::given(method("POST"))
         .and(path("/v1/messages"))
@@ -72,7 +138,6 @@ data: {\"type\":\"message_stop\"}\n\n";
         .await;
 
     let provider = AnthropicProvider::new("test-key".to_string()).with_base_url(mock_server.uri());
-
     let stream = provider.stream_chat(&test_chat_params()).await.unwrap();
     let chunks = collect_chunks(stream).await;
 
@@ -103,7 +168,6 @@ async fn test_anthropic_stream_chat_rate_limited() {
         .await;
 
     let provider = AnthropicProvider::new("test-key".to_string()).with_base_url(mock_server.uri());
-
     let result = provider.stream_chat(&test_chat_params()).await;
     let err = expect_err(result);
     match &err {
@@ -127,7 +191,6 @@ async fn test_anthropic_stream_chat_server_error() {
         .await;
 
     let provider = AnthropicProvider::new("test-key".to_string()).with_base_url(mock_server.uri());
-
     let result = provider.stream_chat(&test_chat_params()).await;
     match expect_err(result) {
         LoopalError::Provider(ProviderError::Api { status, message }) => {
