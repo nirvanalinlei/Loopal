@@ -1,5 +1,7 @@
 # Changelog
 
+English | <a href="./CHANGELOG.zh-CN.md">简体中文</a>
+
 All notable changes to this fork will be documented in this file.
 
 The format is based on Keep a Changelog principles, but entries may also include validation scope and known limitations when a change is still pre-release or environment-constrained.

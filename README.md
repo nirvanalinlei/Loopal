@@ -19,6 +19,10 @@
   <a href="#license">License</a>
 </p>
 
+<p align="center">
+  English | <a href="./README.zh-CN.md">简体中文</a>
+</p>
+
 ---
 
 **Loopal** is a terminal-native AI coding agent built in Rust. It connects to LLM providers, reads and edits your codebase, runs commands, and orchestrates multi-agent workflows — all from inside your terminal with a rich TUI.
@@ -100,7 +104,7 @@ loopal -P bypass
 
 Loopal is built as a modular Rust workspace with clear separation of concerns:
 
-```
+```text
 loopal
 ├── src/                        # Binary entry point, CLI, bootstrap
 ├── crates/
@@ -239,7 +243,7 @@ When `base_url` is non-official Anthropic infrastructure, or when `OPUS_API_URL`
 
 ## CLI Reference
 
-```
+```text
 Usage: loopal [OPTIONS] [PROMPT]...
 
 Arguments:
